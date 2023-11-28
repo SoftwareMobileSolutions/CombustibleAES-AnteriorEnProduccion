@@ -1,0 +1,87 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Inicio";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="~/Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="~/Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<link href="~/Content/plantilla/css/plugins/iCheck/custom.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/iCheck/icheck.min.js"></script>
+<script src="~/Scripts/modules/Panel.js"></script>
+<script type="text/javascript">
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+    $(document).ready(function () {
+        //$('.i-checks').iCheck({
+        //    checkboxClass: 'icheckbox_square-green'
+        //});
+        // GenerarAcceso();
+    });
+
+
+</script>
+
+<div class="page-wrapper">
+    <div class="panel panel-default" style="background-image: url(@Url.Content("~/Imagenes/imagenInicio.jpg")); background-size: cover; height: 33em;">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Control de Combustible AES
+            </h3>
+            <small>Bienvenido al sistema.</small>
+        </div>
+        <div class="panel-body">
+            
+        </div>
+    </div>
+</div>
+@*Empieza el modal*@
+<div class="modal inmodal" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content animated bounceInRight">
+            <div class="panel-heading">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Cerrar</span>
+                </button>
+                <h5 class="modal-title">Accesos Rápidos</h5>
+                <small class="font-bold">Permite colocar módulos de acceso rápido.</small>
+            </div>
+            <div class="modal-body">
+                <div class="panel-body">
+                    <div class="ibox-content">
+                        @ModalContent()
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-white" data-dismiss="modal" id="btnModalClose">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="GetCheckBoxModalPanel();">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper ModalContent()
+{
+    <div class="row" id="MenuOpciones">
+    </div>
+}

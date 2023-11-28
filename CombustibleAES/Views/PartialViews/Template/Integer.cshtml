@@ -1,0 +1,9 @@
+@model int?
+
+@(Html.Kendo().IntegerTextBoxFor(m => m)
+    .Name("integerInput")
+    .HtmlAttributes(new { style = "width:120px" })
+    .Min(int.MinValue)
+    .Max(int.MaxValue)
+    .Value(0)
+)

@@ -1,0 +1,180 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Reportes Combustible > Consumo de Vales";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    function GridData() {
+        var fechaInicio = $("#fecha_inicio").val();
+        var fechaFin = $('#fecha_fin').val();
+        return {
+            filtro: parseInt($("#filtro").data("kendoDropDownList").value()),
+            fechaInicio: fechaInicio,
+            fechaFin: fechaFin
+        }
+    }
+
+    function GenerarReporte() {
+        $('#GridReporteConsumo').data('kendoGrid').dataSource.read();
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+    });
+</script>
+<div class="page-wrapper">
+    <div class="panel panel-default" style="height:100%;">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Reporte de Consumo de Vales
+            </h3>
+            <small>Desde éste módulo podrá generar reportes de consumo de vales.</small>
+        </div>
+        <div class="panel-body" style="height: 100%;">
+            <div class="col-lg-12" style="height: 100%;">
+                <div class="row" style="height: 100%; margin-bottom: 5px; margin-top: -10px;">
+                    <span class="pull-right text-right">
+                        <label>Filtro de datos por:&nbsp;</label>@DropDownOpciones()
+                    </span>
+                </div>
+                <div class="row" style="height: 100%;">
+                    <span id="filtrosControles" class="pull-right text-right">
+                        <div id="controlesFecha" style="margin-bottom: 5px;">
+                            <label>Fecha Inicio:</label>@RenderPage("~/Views/PartialViews/Template/fechainicio.cshtml")
+                            <label>Fecha Fin:</label>@RenderPage("~/Views/PartialViews/Template/fechafin.cshtml")
+                        </div>
+                        <button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="GenerarReporte()">Generar</button>
+                    </span>
+                    <div class="m-t-sm" style="height: 100%">
+                        <div class="row" style="height: 100%;">
+                            <div class="col-md-12" style="height: 100%; margin-top: 10px;">
+                                @GridReporteConsumo()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper GridReporteConsumo()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.ReporteConsumo>()
+        .Name("GridReporteConsumo")
+        .AutoBind(false)
+        .Columns(col =>
+        {
+            col.Bound(c => c.CCF).Title("Crédito Fiscal").Width(200);
+            col.Bound(c => c.Proveedor).Title("Proveedor").Width(200);
+            col.Bound(c => c.NSAP).Title("Nº SAP").Width(200);
+            col.Bound(c => c.Razonsocial).Title("Razón Social").Width(200);
+            col.Bound(c => c.FechaIngresoNumCF).Title("Fecha Crédito Fiscal").Width(200);
+            col.Bound(c => c.Subflota).Title("Subflota").Width(200);
+            col.Bound(c => c.CentroCosto).Title("CentroCosto").Width(200);
+            col.Bound(c => c.Orden).Title("Nº Orden").Hidden(true).Width(200);
+            col.Bound(c => c.PEP).Title("PEP").Width(200);
+            col.Bound(c => c.Alias).Title("Vehículo").Width(200);
+            col.Bound(c => c.Placa).Title("Placa").Width(200);
+            col.Bound(c => c.Odometro).Title("Odómetro").Width(200);
+            col.Bound(c => c.NumeroVale).Title("Vale").Width(200);
+            col.Bound(c => c.CantidadGalones).Title("Galones").Width(200);
+            col.Bound(c => c.TotalPrecio).Title("Total ($)").Width(200);
+            col.Bound(c => c.FovialPlusSubsidio).Title("Fovial + Subsidio ($)").Width(200);
+            col.Bound(c => c.IVA).Title("IVA ($)").Width(200);
+            col.Bound(c => c.Gasto).Title("Gasto ($)").Width(200);
+            col.Bound(c => c.PrecioxGalon).Title("PrecioxGalón ($)").Width(200);
+            col.Bound(c => c.Empresa).Title("Empresa").Width(200);
+            col.Bound(c => c.FechaGeneracion).Title("Fecha Generación").Width(200);
+            col.Bound(c => c.NoEmpleado).Title("No. Empleado").Width(200);
+            col.Bound(c => c.Empleado).Title("Empleado").Width(200);
+            col.Bound(c => c.Usuario).Title("Usuario").Width(200);
+            col.Bound(c => c.TipoCombustible).Title("Tipo Combustible").Width(200);
+            col.Bound(c => c.EstadoVale).Title("Estado").Width(200);
+            col.Bound(c => c.FechaCierre).Title("Fecha Cierre").Width(200);            
+        })
+        .Filterable(f => f
+            .Mode(GridFilterMode.Row)
+            .Operators(ops => ops.
+                ForString(str => str
+                    .Clear()
+                    .Contains("Contiene")
+                    .IsEqualTo("Es igual a")
+                )
+            )
+        )
+        .Excel(exc => exc.AllPages(true).FileName("ReporteConsumo.xlsx"))
+        .Mobile(MobileMode.Auto)
+        .Sortable()
+        .Pageable(x =>
+        {
+            x.Enabled(true);
+            x.PreviousNext(true);
+            x.PageSizes(true);
+            x.Info(true);
+            x.Input(true);
+            x.Numeric(false);
+            x.Refresh(false);
+            x.PageSizes(new List<object> { 20, 30, 40, 50, 100 }).Refresh(true);
+
+        })
+        .NoRecords(nr => nr.Template("<h1 style='   font-color: gray;'>No hay registros para mostrar.</h1>"))
+        .Navigatable()
+        .Excel(excel => excel
+        .FileName("RpteValesGeneral").AllPages(true)
+        .Filterable(true))
+        .ToolBar(tb => tb.Excel().Text("Exportar a Excel"))
+        .Scrollable()
+        .HtmlAttributes(new { style = "width: 100%; heigth: 210px;" })
+        .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+        .Read(r => r.Action("ObtenerReporteConsumo", "ReporteConsumo").Data("GridData"))
+        )
+    )
+}
+
+@helper DropDownOpciones()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("filtro")
+        .DataValueField("FiltroId")
+        .DataTextField("Filtro")
+        .DataSource(ds => ds.Read(r => r.Action("ObtenerFiltros", "ReporteConsumo")))
+        .HtmlAttributes(new { style = "width: 165px;" })
+        //.Events(e => e.Change("filtro_OnChange"))
+    )
+}

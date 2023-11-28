@@ -1,0 +1,45 @@
+﻿<script type="text/javascript">
+    //Colocar mascara a los datatimepicker para cuando se vaya digitando no coloquen mas o menos valores de los que correpsonden
+    function MaskDTInicio() {
+        $("#fecha_inicio5").kendoMaskedTextBox({
+            mask: "0000/00/00 00:00:00"
+        }).removeClass("k-textbox");
+    }
+
+    //Cuando sale del foco del datetimepicker ejecutar lo siguiente
+    var DateTimeNow, fechainicio;
+
+    $(document).on("focusout", "#fecha_inicio5", function () {
+        ValFechaInicio();
+    });
+
+    //Validar fecha de inicio
+    function ValFechaInicio() {
+        fechainicio = GetDateTimePickerVal("fecha_inicio5");
+        DateTimeToday = moment().startOf('day').format('YYYY/MM/DD HH:mm:ss');
+        (!(fechainicio instanceof Date)) && ($("#fecha_inicio5").val(DateTimeToday), $("#fecha_inicio5").data("kendoDateTimePicker").value(DateTimeToday), fechainicio = GetDateTimePickerVal("fecha_inicio5"));//Si la fecha no es valida que la resetee al dia inicio del dia de ahora
+    }
+    $(window).load(function () {
+        MaskDTInicio();
+        fechainicio = GetDateTimePickerVal("fecha_inicio5");
+    });
+</script>
+
+@using CombustibleAES.Models;
+@{
+    LogIn Usuario;
+    Usuario = this.Session["User"] as LogIn;
+    var user = new { timezone = -6 };
+
+    DateTime dtFH = DateTime.Now.AddHours(user.timezone);
+    DateTime dtFechaHoy = new DateTime(dtFH.Year, dtFH.Month, dtFH.Day, 0, 0, 0);
+}
+
+@(Html.Kendo()
+      .DateTimePicker()
+      .Name("fecha_inicio5")
+      .Format("yyyy/MM/dd HH:mm:ss")
+      .Value(dtFechaHoy)
+      .Culture("es-MX")
+      .HtmlAttributes(new { style = "width:180px", placeholder = "____/__/__ __:__:__" })
+)

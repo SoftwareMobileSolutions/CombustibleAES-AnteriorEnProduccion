@@ -1,0 +1,16 @@
+﻿@(Html.Kendo()
+          .TreeView()
+                   .AutoScroll(true)
+                .Animation(false)
+                        .LoadOnDemand(false)
+
+          .Name("TreeSubflotas")
+          .HtmlAttributes(new { style = "overflow: hidden;" })
+          .Events(e => e.Change("TreeSubflotas_Change").DataBound("TreeSubflotas_DataBound"))
+          .DataSource(d => d.Model(m => m
+                                         .HasChildren("HasChildren")
+                                         .Children("Children"))
+                            .Read(r => r.Action("TreeSubflotas", "Global")))
+          .DataTextField("Name")
+          //.Checkboxes(chk => chk.Enabled(true).CheckChildren(true))
+          .DataImageUrlField("ImageUrl"))

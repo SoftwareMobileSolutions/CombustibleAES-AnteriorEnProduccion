@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <CodeSnippet Format="1.0.0">
+    <Header>
+      <Title>Add SubfleetTree</Title>
+      <Author>Franklin Alvarado</Author>
+      <Description>Agrega arbol de compañia</Description>
+      <Shortcut>addSubfleetTree</Shortcut>
+    </Header>
+    <Snippet>
+      <Code Language="HTML">
+        <![CDATA[
+        <script type="text/javascript">
+            function TreeSubflotas_Change() { }
+            function TreeSubflotas_DataBound() {
+             $$("#TreeSubflotas").data("kendoTreeView").expand("li:first");
+            }
+           </script>
+       @RenderPage("~/Views/PartialViews/kendoObjects/TreeSubfleet.cshtml")
+ ]]>
+      </Code>
+    </Snippet>
+  </CodeSnippet>
+</CodeSnippets>

@@ -1,0 +1,311 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Configuración > Centro de Servicio";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+
+        var accion = 0;//0=Nuevo;1=Modificar
+        var idTemp = 0; //userid temporal
+
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    function LimpiarCampos() {
+        $('#txtCodigo').val("");
+        $('#txtCServicio').val("");
+        $('#txtCiudad').val("");
+        $('#txtContacto').val("");
+        $('#txtTelefono').val("");
+        $('#txtNIT').val("");
+        $('#txtDireccion').val("");
+        $('#txtEmail').val("");
+    }
+
+    function updateModal() {
+        accion = 1;
+        $('#TemaModal').html("Modificar Gasolinera");
+    }
+
+    function newModal() {
+        accion = 0;
+        LimpiarCampos();
+    }
+
+    function GridCServicios_Change() {
+        accion = 1;
+        LimpiarCampos();
+        var data = this.dataItem(this.select());
+
+        if (Object.is(data, null) === false) {
+            idTemp = data.Gasolineraid;
+            $('#txtCodigo').val(data.Codigo);
+            $('#txtCServicio').val(data.CServicio);
+            $('#txtCiudad').val(data.Ciudad);
+            $('#txtContacto').val(data.Contacto);
+            $('#txtTelefono').val(data.Telefono);
+            $('#txtNIT').val(data.NIT);
+            $('#txtDireccion').val(data.Direccion);
+            $('#txtEmail').val(data.Email);
+            $('#updateModal').click();
+        }
+    }
+
+    function btn_Guardar_Onclick() {
+        if (accion == 0) {
+            // Nuevo centro de servicio
+            if ($('#txtCServicio').val() == "") {
+                GenerarMensaje("Aviso", "Debe ingresar un nombre para la estación de servicio", 4);
+            } else {
+                $.post("../CentroServicio/InsertarCentroServicio", {
+                    CentroServicio: $('#txtCServicio').val(), Direccion: $('#txtDireccion').val(), NIT: $('#txtNIT').val(),
+                    Email: $('#txtEmail').val(), Codigo: $('#txtCodigo').val(), Ciudad: $('#txtCiudad').val(),
+                    Contacto: $('#txtContacto').val(), Telefono: $('#txtTelefono').val()
+                },
+                    function (data) {
+                        var respuesta = data;
+                        if (respuesta.codigo < 0) {
+                            GenerarMensaje("Aviso", "Ha ocurrido un error al insertar el centro de servicio, intente nuevamente. " + respuesta.mensaje, 4);
+                        } else {
+                            GenerarMensaje("¡Éxito!", "Centro de servicio ingresado satisfactoriamente.", 2);
+                            LimpiarCampos();
+                            $('#GridCServicios').data('kendoGrid').dataSource.read();
+                        }
+                    });
+            }
+        } else {
+            // Modificar centro de servicio
+            if ($('#txtCServicio').val() == "") {
+                GenerarMensaje("Aviso", "No puede dejar el nombre de la estación de servicio en blanco", 4);
+            } else {
+                $.post("../CentroServicio/ActualizarCentroServicio", {
+                    Gasolineraid: idTemp, CentroServicio: $('#txtCServicio').val(), Direccion: $('#txtDireccion').val(),
+                    NIT: $('#txtNIT').val(), Email: $('#txtEmail').val(), Codigo: $('#txtCodigo').val(),
+                    Ciudad: $('#txtCiudad').val(), Contacto: $('#txtContacto').val(), Telefono: $('#txtTelefono').val()
+                },
+                    function (data) {
+                        var respuesta = data;
+                        if (respuesta.codigo < 0) {
+                            GenerarMensaje("Aviso", "Ha ocurrido un error al actualizar el centro de servicio, intente nuevamente", 4);
+                        } else {
+                            GenerarMensaje("¡Éxito!", "Usuario actualizado satisfactoriamente.", 2);
+                            LimpiarCampos();
+                            $('#GridCServicios').data('kendoGrid').dataSource.read();
+                        }
+                    });
+            }
+        }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+    });
+
+</script>
+<div class="page-wrapper">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Centros de Servicio
+            </h3>
+            <small>Permite administrar la información de los diferentes centros de servicio</small>
+        </div>
+        <div class="panel-body">
+            <div class="col-lg-12">
+                <div class="ibox-content" style="padding-left: 0px;">
+                    <div class="row">
+                        <div>
+                            <span class="pull-right text-right">
+                                <button type="button" id="btnMensaje" class="fa fa-plus-circle btn btn-primary btn-lg" onclick="newModal();" data-toggle="modal" data-target="#myModal" />
+                                <button type="button" id="updateModal" onclick="updateModal();" data-toggle="modal" style="display:none;" data-target="#myModal"></button>
+                            </span>
+                        </div>
+                        <div class="m-t-sm">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    @GridCServicios()
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@*Empieza el modal*@
+<div class="modal inmodal" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content animated bounceInRight">
+            <div class="panel-heading">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Cerrar</span>
+                </button>
+                <h3 class="modal-title">Modificar Centro de Servicio</h3>
+                <small class="font-bold">Modificar Centro de Servicio</small>
+            </div>
+            <div class="modal-body">
+                <div class="panel-body">
+                    <div class="ibox-content">
+                        <form class="form-horizontal">
+                            <center>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Código:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtCodigo" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Gasolinera:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtCServicio" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Ciudad:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtCiudad" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Contacto:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtContacto" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Teléfono:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtTelefono" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">NIT:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtNIT" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Dirección:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtDireccion" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Email:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtEmail" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                            </center>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-white" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="btn_Guardar_Onclick()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+@*Termina el modal*@
+
+@helper GridCServicios()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.CentroServicio>()
+        .Name("GridCServicios")
+        .Events(evt => evt.Change("GridCServicios_Change"))
+        .AutoBind(true)//banderaActivo	activo	gasolineraid
+            .Columns(c =>
+            {
+                c.Bound(col => col.Gasolineraid).Visible(false);
+                c.Bound(col => col.Codigo).Title("Código");
+                c.Bound(col => col.CServicio).Title("Gasolinera");
+                c.Bound(col => col.Ciudad).Title("Ciudad");
+                c.Bound(col => col.Contacto).Title("Contacto");
+                c.Bound(col => col.Telefono).Title("Teléfono");
+                c.Bound(col => col.NIT).Title("NIT");
+                c.Bound(col => col.Direccion).Title("Dirección");
+                c.Bound(col => col.Email).Title("Email");                                                                                
+            })
+        .Mobile(MobileMode.Auto)
+            .Selectable(selectable => selectable.Mode(GridSelectionMode.Single).Type(GridSelectionType.Row))
+            .Resizable(resize => resize.Columns(true))
+            .Reorderable(a => a.Columns(true))
+            .ColumnMenu()
+            .Scrollable(s => s.Enabled(true))
+            .Sortable()
+            .Filterable(f => f
+                .Mode(GridFilterMode.Row)
+                .Operators(ops => ops.
+                    ForString(str => str
+                        .Clear()
+                        .Contains("Contiene")
+                        .IsEqualTo("Es igual a")
+                    )
+                )
+            )
+            .Excel(excel => excel
+            .FileName("RPTCServicios").AllPages(true)
+            )
+            .ToolBar(tb => tb.Excel().Text("Exportar a Excel"))
+            .Navigatable()
+            .Scrollable()
+            .HtmlAttributes(new { style = "height:100%; " })
+
+            .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+                            .Read(r => r.Action("GridCentroServicios", "CentroServicio"))
+        )
+
+    )
+}

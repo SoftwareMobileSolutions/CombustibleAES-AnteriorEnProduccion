@@ -1,0 +1,381 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" lang="en-US">
+<head profile="http://gmpg.org/xfn/11">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Kontrol Tree</title>
+
+        <link rel="stylesheet" type="text/css" href="css/aciTree.css" media="all">
+        <link rel="stylesheet" type="text/css" href="css/demo.css" media="all">
+        
+        <script type="text/javascript" src="../jquery.min.js"></script>
+        <script type="text/javascript" src="js/jquery.aciPlugin.min.js"></script>
+
+        <script type="text/javascript" src="js/jquery.aciTree.min.js"></script>
+        <script type="text/javascript" >
+   			jQuery(function($) {
+  // SEARCH
+  function tog(v){return v?'addClass':'removeClass';} 
+  $(document).on('input', '.clearable', function(){
+    $(this)[tog(this.value)]('x');
+  }).on('mousemove', '.x', function( e ){
+    $(this)[tog(this.offsetWidth-18 < e.clientX-this.getBoundingClientRect().left)]('onX');   
+  }).on('click', '.onX', function(){
+    $(this).removeClass('x onX').val('').change();
+  });
+  
+  
+});     
+	     </script>
+
+
+      <style type="text/css">
+      /* SEARCH */
+      .clearable{
+  background: #fff url(data:image/gif;base64,R0lGODlhBwAHAIAAAP///5KSkiH5BAAAAAAALAAAAAAHAAcAAAIMTICmsGrIXnLxuDMLADs=) no-repeat right -10px center;
+  border: 1px solid #999;
+  padding: 3px 18px 3px 4px; /* Use the same right padding (18) in jQ! */
+  border-radius: 3px;
+  transition: background 0.4s;
+}
+.clearable.x  { background-position: right 5px center; }
+.clearable.onX{ cursor: pointer; }
+
+      /* TREEVIEW */
+		.arbol {
+					height: 340px !important;	
+					width: 240px; !important; 
+		} 
+		.icontree 
+		{
+			width: 20px !important;		
+		}
+		.company {
+				background: url(imagenes/icontree/home.gif) 0 0 no-repeat !important;		
+		}
+		.fleet {
+				background: url(imagenes/icontree/cars.png) 0 0 no-repeat !important;	
+		}
+		.subfleets {
+			background: url(imagenes/icontree/cars.png) 0 0 no-repeat !important;	
+		}
+		
+		
+        </style>
+<script  type="text/javascript">
+function treeview() {
+    $(function() {
+    	  $('#search').val('');
+        var rootData = [{
+            "id": 1,
+            "label": "Compañía SMS",
+            "inode": true,
+            "open": true,
+            "checkbox": true,
+            "radio": false,
+            "icon": "company icontree",
+            "branch": [{
+                "id": 1,
+                "label": "Subflota1",
+                "inode": true,
+                "close": true,
+                "checkbox": true,
+                "radio": false,
+                "icon": "fleet",
+                "branch": [{
+                    "id": 2,
+                    "label": "carro1",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 3,
+                    "label": "carro2",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 4,
+                    "label": "carro3",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 5,
+                    "label": "carro4",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 6,
+                    "label": "carro5",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 7,
+                    "label": "carro6",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 8,
+                    "label": "carro7",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 9,
+                    "label": "carro8",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 10,
+                    "label": "carro9",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 11,
+                    "label": "carro10",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 12,
+                    "label": "carro11",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 13,
+                    "label": "carro12",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 14,
+                    "label": "carro13",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 15,
+                    "label": "carro14",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 16,
+                    "label": "carro15",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 17,
+                    "label": "carro16",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }]
+            }, {
+                "id": 1,
+                "label": "Subflota2",
+                "inode": true,
+                "icon": "fleet",
+                "close": true,
+                "checkbox": true,
+                "radio": false,
+                "branch": [{
+                    "id": 2,
+                    "label": "carro1",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 3,
+                    "label": "carro2",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 4,
+                    "label": "carro3",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 5,
+                    "label": "carro4",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 6,
+                    "label": "carro5",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 7,
+                    "label": "carro6",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 8,
+                    "label": "carro7",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 9,
+                    "label": "carro8",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 10,
+                    "label": "carro9",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 11,
+                    "label": "carro10",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 12,
+                    "label": "carro11",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 13,
+                    "label": "carro12",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 14,
+                    "label": "carro13",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 15,
+                    "label": "carro14",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 16,
+                    "label": "carro15",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }, {
+                    "id": 17,
+                    "label": "carro16",
+                    "inode": false,
+                    "icon": "subfleets",
+                    "checkbox": true,
+                    "radio": false
+                }]
+            }]
+        }];
+        // init the tree
+        $('#tree').aciTree({
+            rootData: rootData,
+            checkbox: true,
+            // our custom filter/search
+            filterHook: function(item, search, regexp) {
+                if (search.length) {
+                    // try to get the parent
+                    var parent = this.parent(item);
+                    if (parent.length) {
+                        // get parent label
+                        var label = this.getLabel(parent);
+                        if (regexp.test(String(label))) {
+                            // all direct childrens match
+                            return true;
+                        }
+                    }
+                    // match the item
+                    return regexp.test(String(this.getLabel(item)));
+                } else {
+                    // empty search, all matches
+                    return true;
+                }
+            }
+        });
+        var api = $('#tree').aciTree('api');
+        $('#search').keyup(function() {
+             var last = '';
+            if ($(this).val() == last) {
+                return;
+            }
+            last = $(this).val();
+            api.filter(null, {
+                search: $(this).val(),
+                success: function(item, options) {
+                    if (!options.first) {
+                        alert('No results found!');
+                    }
+                }
+            });
+        });
+    });
+}
+
+$(window).load(function () {
+	treeview();
+});
+</script>
+</head>
+<body>
+<div id="arbol1">
+	<div class="aciTree" id="tree" style="float: none  !important;">
+		Buscar: <input id="search" class="clearable" type="text" value="">
+	</div>
+</div>
+									<link rel="stylesheet" type="text/css" href="css/shThemeDefault.css" media="all">
+									<script type="text/javascript" src="js/shCore.js"></script>
+									<script type="text/javascript" src="js/shBrushJScript.js"></script>
+									
+									
+</body>
+</html>

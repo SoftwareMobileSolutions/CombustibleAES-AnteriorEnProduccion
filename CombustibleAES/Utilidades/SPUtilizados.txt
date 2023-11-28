@@ -1,0 +1,16 @@
+﻿Plantilla Local: \\192.168.1.125\Proyectos\Web\librerias y varios\plantilla
+Plantilla Preview Web: http://webapplayers.com/inspinia_admin-v2.8/
+
+SP_VCObtenerReporteVales
+SP_VCGetDDLSubfleet
+SP_VCValidarUser
+SP_VCObtener_PermisosTree_Plan
+SP_VCObtenerVehiculos
+SP_VCObtenerClientes
+SP_VCObtenerEmpleado
+SP_VCObtenerRemolques
+SP_VCObtenerTipoCombustible
+SP_VCObtenerCentroServicio
+SP_VCVerificarCServicio
+SP_VCInsertarCentroServicio
+SP_VCActualizarCentroServicio

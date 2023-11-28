@@ -1,0 +1,390 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Taxi > Nuevo Vale";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    var valeid = 0; // Vale Generado para imprimir.
+    var empresaid = 0; // Empresa seleccionada.
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    function ObtenerFecha() {
+        $.post("../Global/ObtenerFecha", {},
+            function (data) {
+                var respuesta = data;
+                if (respuesta.codigo < 0) {
+                    GenerarMensaje("Aviso", "Ha ocurrido un error al obtener la fecha actual, intente nuevamente", 4);
+                } else {
+                    $('#txtFecha').val(respuesta.fecha);
+                }
+            }
+        );
+    }
+
+
+    function EmpresaList_onChange() {
+        empresaid = $("#EmpresaList").data("kendoDropDownList").value();                
+        $("#chkCC").prop("checked", false);
+        if (empresaid == 5 || empresaid == 7) {            
+            $("#chkCC").show();
+            $("#lblCC").show();
+        }
+        else {
+            $("#chkCC").hide();
+            $("#lblCC").hide();
+        }
+    }
+
+
+    $(document).ready(function () {
+        
+        $('#txtOrdenEstadistica').prop("disabled", true);
+        ajustarAltoTabla();
+        ObtenerFecha();
+       
+    });
+
+    function GetValeID() {
+        return { IdVale: valeid }
+    }
+
+    function btn_Ingresar_Onclick() {
+        //Almacenamiento de datos
+        var _idEmpresa = $("#EmpresaList").data("kendoDropDownList").value();
+        var _pasajero = $("#txtPasajero").val();
+        var _desde = $("#txtDesde").val();
+        var _fechaGeneracion = $("#txtFecha").val();
+        var _idTipoUnidad = $("#TipoUnidadList").data("kendoDropDownList").value();
+        var _idArea = $("#AreaList").data("kendoDropDownList").value();
+        var _centroCosto = $.trim($("#txtCCosto").val());
+        var _ordenEstadistica = $("#txtOrdenEstadistica").val();
+        var empList = $('#EmpresaList').data("kendoDropDownList").value();
+
+     
+
+        //Validando Centro de costos
+        if (empList === "9") { //Nuevo Negocio libre de caracteres
+            if (_centroCosto === "") {
+                GenerarMensaje("Aviso", "El código de Centro de Costos no puede quedar vacío", 3);
+                return false;
+            }
+        } else {
+            var Opex_Val = new RegExp(/([SV0-9$]){10}/g);
+            if (!Opex_Val.test(_centroCosto)) {
+                GenerarMensaje("Aviso", "Por favor ingrese el código para el Centro de Costos", 3);
+                return false;
+            }
+        }
+
+        //Se valida que el formulario cumpla con los estándares solicitados
+        if (_idEmpresa > 0) {
+            if (_idTipoUnidad > 0) {
+                if (_idArea > 0) {
+                   // console.log(_centroCosto);
+                    if (_centroCosto !== "") {
+                       // var validarCentroCosto = $("#chkCC").prop("checked") ? /^([0-9]{10})$/ : /SV\w+([0-9]{7}$)$/;
+                      //  if (validarCentroCosto.test(_centroCosto)) {
+                            //if (_ordenEstadistica != "") {
+                                /*if (_ordenEstadistica.length == 4) {*/
+                                    $.post("../ValeTaxi/InsertarVale",
+                                        { IdEmpresa: _idEmpresa, Pasajero: _pasajero, Desde: _desde, IdTipoUnidad: parseInt(_idTipoUnidad), IdArea: parseInt(_idArea), CentroCosto: _centroCosto, OrdenEstadistica: _ordenEstadistica },
+                                        function (e) {
+                                            GenerarMensaje(e.Cabecera, e.Mensaje, e.Nivel);
+                                            if (e.Estado == 1) {
+                                                valeid = e.ValeId;
+                                                LimpiarCampos();
+                                                $("#GridValeImprimir").data("kendoGrid").dataSource.read();
+                                            }
+                                        }
+                                    );
+                            //    }
+                            //    else {
+                            //        GenerarMensaje("Aviso", "Por favor ingrese el número de orden estadística válido (Formato: Cuatro números únicamente).", 3);
+                            //    }
+                            //}
+                            //else {
+                            //    GenerarMensaje("Aviso", "Por favor ingrese el número de orden estadística.", 3);
+                            //}
+                        //}
+                        //else {
+                        //    if($("#chkCC").prop("checked")){
+                        //        GenerarMensaje("Aviso", "Por favor ingrese un centro de costo válido con el nuevo formato.", 3);
+                        //    }else {
+                        //        GenerarMensaje("Aviso", "Por favor ingrese un centro de costo válido (Formato 'SV' seguido de 8 digitos. Ejemplo: 'SV42517968').", 3);
+                        //    }
+                            
+
+                        //}
+                    }
+                    else {
+                        GenerarMensaje("Aviso", "Por favor ingrese el centro de costo.", 3);
+                    }
+                }
+                else {
+                    GenerarMensaje("Aviso", "Por favor seleccione una área.", 3);
+                }
+            }
+            else {
+                GenerarMensaje("Aviso", "Por favor seleccione el tipo de unidad.", 3);
+            }
+
+
+
+            //if (_pasajero != "") {                
+            //}
+            //else {
+            //    GenerarMensaje("Aviso", "Por favor ingrese el nombre del pasajero.", 3);
+            //}
+        }
+        else {
+            GenerarMensaje("Aviso", "Por favor seleccione una empresa.", 3);
+        }
+    }
+
+    function LimpiarCampos() {
+        $("#EmpresaList").data("kendoDropDownList").select(0);
+        $("#txtPasajero").val("");
+        $("#txtDesde").val("");
+        ObtenerFecha()
+        $("#TipoUnidadList").data("kendoDropDownList").select(0);
+        $("#AreaList").data("kendoDropDownList").select(0);
+        $("#txtCCosto").val("");
+        $("#txtOrdenEstadistica").val("");
+    }
+
+    function btn_Imprimir_Onclick() {
+        if (valeid === 0) {
+            GenerarMensaje("Aviso", "Debe generar el vale primero.", 3);
+        } else {
+            var uv = "../ValeTaxi/ValeTaxiImprimir?vale=" + valeid;
+            window.open(uv, '_blank');
+        }
+    }
+
+</script>
+<div class="page-wrapper">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Ingresando nuevo vale de taxi
+            </h3>
+            <small>Desde este módulo puede generar nuevos vales de taxi</small>
+        </div>
+        <div class="panel-body">
+            <div class="col-lg-12">
+                <div class="ibox-content" style="padding-left: 0px;">
+                    <div class="row">
+                        <div class="m-t-sm">
+                            <div class="row">
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Empresa:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        @EmpresaList()
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Pasajero:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtPasajero" class="txtTab k-textbox marginFivePx" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Desde:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtDesde" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Fecha:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtFecha" disabled class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Tipo Unidad:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        @TipoUnidadList()
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Área:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        @AreaList()
+                                        &nbsp;&nbsp;<input type="checkbox" id="chkCC" value="false" hidden />  <label for="chkCC" id="lblCC" hidden>Nuevo formato</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Centro Costo:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtCCosto" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Orden Estadística:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtOrdenEstadistica" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="btn_Ingresar_Onclick();">Ingresar Vale</button>
+                                <button type="button" class="btn btn-primary" onclick="btn_Imprimir_Onclick();">Imprimir</button>
+                            </div>
+                            <div>
+                                @GridValeImprimir()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper EmpresaList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("EmpresaList")
+        .DataTextField("empresa")
+        .DataValueField("empresaid")
+        .Events(e =>
+        {
+            e.Change("EmpresaList_onChange");
+        })
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ComboEmpresas", "Global");
+        })))
+    )
+}
+
+@helper AreaList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("AreaList")
+        .DataTextField("NombreArea")
+        .DataValueField("IdArea")
+        .HtmlAttributes(new { style = "width:250px;" })
+        .Filter("contains")
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ObtenerAreas", "Global");
+        })))
+    )
+}
+
+@helper TipoUnidadList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("TipoUnidadList")
+        .DataTextField("Tipo")
+        .DataValueField("IdTipo")
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ObtenerTipoUnidad", "Global");
+        })))
+    )
+}
+
+@helper GridValeImprimir()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.ValeTaxi>()
+        .Name("GridValeImprimir")
+        .AutoBind(false)
+            .Columns(c =>
+            {
+                c.Bound(col => col.NoVale).Title("No. vale");
+                c.Bound(col => col.Empresa).Title("Empresa");
+                c.Bound(col => col.Pasajero).Title("Pasajero");
+                c.Bound(col => col.Desde).Title("Desde");
+                c.Bound(col => col.FechaGeneracion).Title("Fecha");
+                c.Bound(col => col.TipoUnidad).Title("Tipo Unidad");
+                c.Bound(col => col.Area).Title("Área");
+                c.Bound(col => col.CentroCosto).Title("Centro Costo");
+                c.Bound(col => col.OrdenEstadistica).Title("Orden Estadística");
+            })
+        .Mobile(MobileMode.Auto)
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single).Type(GridSelectionType.Row))
+        .Resizable(resize => resize.Columns(true))
+        .Reorderable(a => a.Columns(true))
+        .ColumnMenu()
+        .Scrollable(s => s.Enabled(true))
+        .Sortable()
+        .Filterable()
+        .HtmlAttributes(new { style = "height:100%;" })
+        .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+            .Read(r => r.Action("ObtenerVale", "ValeTaxi").Data("GetValeID"))
+        )
+    )
+}

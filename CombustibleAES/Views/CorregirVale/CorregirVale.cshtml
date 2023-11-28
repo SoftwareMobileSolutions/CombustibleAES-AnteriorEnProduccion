@@ -1,0 +1,592 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Combustible > Corregir Vale";
+}
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    var ivaleid = 0;
+    var tt = 0;
+    var chkCF = 0; //0 = No cambiar crédito fiscal; 1 = cambiar Crédito fiscal
+    var v = null;
+    var cfRequerido; //0 = no es requerido; 1 = es requerido
+
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    function btn_Buscar_Onclick() {
+        numVale = $('#txtNumVale').val();
+        if (numVale != "") { //Se verifica que se haya ingresado el numero de un vale previamente.
+            $.post(
+                "../CorregirVale/ObtenerValeCorregir",
+                { idvale: numVale },
+                function (data) {
+                    var respuesta = data;
+                    if (respuesta.codigo == 0) {
+                        GenerarMensaje("Aviso", respuesta.mensaje, 4);
+                    } else {
+                        var Vale = respuesta.vale[0];
+                        v = Vale;
+                        LimpiarFormulario();
+                        tt = v.TotalPrecio;
+                        ivaleid = Vale.NumeroVale;
+                        $("#estado").data("kendoDropDownList").dataSource.read();                        
+                        v.cf = Vale.CreditoFiscal;
+                        v.st = Vale.IdEstadoVale;
+                        $("#txtCreditoFiscal").val(Vale.CreditoFiscal);
+                        $("#txtOdometro").val(Vale.Odometro);
+                        $("#txtCantidadG").val(Vale.CantidadGalones);
+                        $("#txtPrecioUGal").val(Vale.PrecioGalon);
+                        $("#txtTotal").val(Vale.TotalPrecio);
+                        $("#fechasimple5").data("kendoDatePicker").value(Vale.FechaCF == null ? moment(new Date()).format("YYYY/MM/DD") : moment(Vale.FechaCF).format("YYYY/MM/DD"));
+                        $("#EstacionServicioList").data("kendoDropDownList").value(Vale.IdEstacionServicio == "" ? $("#EstacionServicioList").data("kendoDropDownList").dataSource.data()[0].id : Vale.IdEstacionServicio);
+                        $("#txtComentarioAnulado").val(Vale.ComentarioAnulado);
+                        $("#GridValeCorregido").data("kendoGrid").dataSource.read();
+                        GenerarMensaje("Aviso", "Mostrando información del vale No. " + ivaleid, 2);
+                    }
+                }
+            );
+        }
+        else { //No se ha ingresado el numero de vale.
+            GenerarMensaje("Aviso", "Primero ingrese el número de vale de combustible a buscar.", 3);
+        }
+    }
+
+    function validacion(_odometro, _galones, _precioGalon) {
+        if (_odometro != "") {
+            if (_odometro > 0) {
+                if (_galones != "") {
+                    if (_galones > 0) {
+                        if (_precioGalon != "") {
+                            if (_precioGalon > 0) {
+                                return true;
+                            }
+                            else {
+                                GenerarMensaje("Aviso", "El precio por unidad de galón ser un valor mayor $0.", 3);
+                            }
+                        }
+                        else {
+                            GenerarMensaje("Aviso", "Por favor ingrese el precio por unidad de galón.", 3);
+                        }
+                    }
+                    else {
+                        GenerarMensaje("Aviso", "La cantidad de galones de combustible debe tener un valor mayor a 0.", 3);
+                    }
+                }
+                else {
+                    GenerarMensaje("Aviso", "Por favor ingrese la cantidad de galones de combustible.", 3);
+                }
+            }
+            else {
+                GenerarMensaje("Aviso", "El odometro debe tener un valor mayor a 0.", 3);
+            }
+        }
+        else {
+            GenerarMensaje("Aviso", "Por favor ingrese el odómetro.", 3);
+        }
+        return false;
+    }
+
+    function chkCF_OnChange() {
+        if (chkCF == 0) {
+            chkCF = 1;
+            $("#txtCreditoFiscal").removeAttr("disabled");
+            $("#txtCreditoFiscal").val("");
+            $("#fechasimple5").data("kendoDatePicker").enable(true);
+            $("#fechasimple5").data("kendoDatePicker").value(moment(new Date()).format("YYYY/MM/DD"));
+        }
+        else {
+            chkCF = 0;
+            $("#txtCreditoFiscal").attr("disabled", true);
+            $("#txtCreditoFiscal").val(v.cf);
+            $("#fechasimple5").data("kendoDatePicker").enable(false);
+            $("#fechasimple5").data("kendoDatePicker").value(v.FechaCF == null ? moment(new Date()).format("YYYY/MM/DD") : moment(v.FechaCF).format("YYYY/MM/DD"));
+        }
+    }
+
+    function btnCorregir_Onclick() {
+        if (ivaleid != 0) { //Se verifica que se haya buscado un vale previamente
+            var _estadoVale = parseInt($("#estado").data("kendoDropDownList").value());
+            var _creditoFiscal = $("#txtCreditoFiscal").val();
+            var _fechaCF = $("#fechasimple5").data("kendoDatePicker").value();
+            var _odometro = parseInt($("#txtOdometro").val());
+            var _galones = parseFloat($("#txtCantidadG").val());
+            var _precioGalon = parseFloat($("#txtPrecioUGal").val());
+            var _total = tt;
+            var _estacionServicio = parseInt($("#EstacionServicioList").data("kendoDropDownList").value());
+            var _comentarioAnulado = $("#txtComentarioAnulado").val();
+            var camposValidados = false;
+
+            if (_estadoVale > 0) {
+                if (_estadoVale == 1 || _estadoVale == 2 || _estadoVale == 5 || _estadoVale == 6) {
+                    camposValidados = true;
+                }
+                else {
+                    if (cfRequerido == 1) {
+                        if (_creditoFiscal != "") {
+                            if (_fechaCF != null) {
+                                camposValidados = validacion(_odometro, _galones, _precioGalon);
+                            }
+                            else {
+                                GenerarMensaje("Aviso", "Por favor seleccione la fecha de ingreso del crédito fiscal..", 3);
+                            }
+                        }
+                        else {
+                            GenerarMensaje("Aviso", "Por favor ingrese el número de crédito fiscal.", 3);
+                        }
+                    }
+                    else {
+                        camposValidados = validacion(_odometro, _galones, _precioGalon);
+                    }
+                }
+            }
+            else {
+                GenerarMensaje("Aviso", "Por favor seleccione un estado para el vale actual.", 3);
+            }
+
+            if (camposValidados) {
+                var estadoValidado = false;
+                if (_estadoVale == 6) {
+                    if (_comentarioAnulado != "") {
+                        estadoValidado = true;
+                    }
+                    else {
+                        GenerarMensaje("Aviso", "Por favor ingrese el comentario para validar el cambio de estado del vale a 'Anulado'.", 3);
+                    }
+                }
+                else {
+                    estadoValidado = true;
+                }
+
+                if (estadoValidado) {
+                    if (_estadoVale == 1 || _estadoVale == 2 || _estadoVale == 5 || _estadoVale == 6) {
+                        _creditoFiscal = v.cf;
+                        _odometro = v.Odometro;
+                        _galones = v.CantidadGalones;
+                        _precioGalon = v.PrecioGalon;
+                        _estacionServicio = v.IdEstacionServicio;
+                        _total = v.TotalPrecio;
+                    }
+                    confirmado = true;
+                    $.post("../CorregirVale/Corregir",
+                        {
+                            idVale: ivaleid, estadoVale: _estadoVale, creditoFiscal: _creditoFiscal,
+                            creditoFiscal_ant: v.CreditoFiscal, odometro: _odometro,
+                            odometro_ant: v.Odometro, galones: "" + _galones, galones_ant: "" + v.CantidadGalones,
+                            precioGalon: "" + _precioGalon, precioGalon_ant: "" + v.PrecioGalon, total: "" + _total,
+                            total_ant: "" + v.TotalPrecio, estacionServicio: _estacionServicio, tipoCombustible: v.TipoCombustible,
+                            comentarioAnulado: _comentarioAnulado, fechaCF: moment($("#fechasimple5").data("kendoDatePicker").value()).format("YYYYMMDD")
+                        },
+                        function (r) {
+                            GenerarMensaje("Aviso", r.mensaje, r.nivel);
+                            if (r.respuesta == 1) {
+                                //----- Se asignan valores por defecto a los campos del formulario como a las variables
+                                //----- que permiten el funcionamiento dle mismo
+                                LimpiarFormulario();
+                                $("#txtNumVale").val("");
+                                tt = 0;
+                                chkCF = 0;
+                                v = "";
+                                cfRequerido = 0;
+                                $("#chkCF").prop("checked", false);
+                                $("#chkCF").hide();
+                                $("#lblCF").hide();
+                                $("#GridValeCorregido").data("kendoGrid").dataSource.read();
+                                ivaleid = 0;
+                            }
+                        }
+                    );
+                }
+            }
+        }
+        else { //No se ha buscado ningun vale.
+            GenerarMensaje("Aviso", "Para corregir la información de un vale, primero ingrese el número de vale y luego haga clic en 'Buscar No. Vale'.", 3);
+        }
+    }
+    //Se encarga de habilitar o no el campo de credito fiscal
+    function estado_OnChange() {
+        //Se verifica que se esté trabajando con un vale de combustible
+        if (ivaleid != 0) {
+            estado = $("#estado").data("kendoDropDownList").value();
+
+            if (estado == 4 || estado == 7) {
+                $("#txtCreditoFiscal").removeAttr("disabled");
+                $("#fechasimple5").data("kendoDatePicker").enable(true);
+                chkCF = 0;
+                $("#chkCF").prop("checked", false);
+                $("#txtCreditoFiscal").val(v.cf);
+                $("#fechasimple5").data("kendoDatePicker").value(moment(v.FechaCF).format("YYYY/MM/DD"));
+                cfRequerido = 1;
+                if (v.cf == null) {
+                    $("#chkCF").hide();
+                    $("#lblCF").hide();
+                }
+                else {
+                    $("#txtCreditoFiscal").attr("disabled", true);
+                    $("#fechasimple5").data("kendoDatePicker").enable(false);
+                    $("#chkCF").show();
+                    $("#lblCF").show();
+                }
+            }
+            else {
+                cfRequerido = 0;
+                $("#txtCreditoFiscal").attr("disabled", true);
+                $("#fechasimple5").data("kendoDatePicker").enable(false);
+                chkCF = 0;
+                $("#chkCF").prop("checked", false);
+                $("#chkCF").hide();
+                $("#lblCF").hide();
+            }
+
+            //Habilitacion o deshabilitación de los controles
+            if (estado == 1 || estado == 2 || estado == 5 || estado == 6) {
+                $("#txtOdometro").attr("disabled", true);
+                $("#txtCantidadG").attr("disabled", true);
+                $("#txtPrecioUGal").attr("disabled", true);
+                $("#EstacionServicioList").data("kendoDropDownList").enable(false);
+                var proximaAlerta = (estado == 1 || estado == 2) ? "La información previa de este vale será eliminada debido al estado que ha seleccionado." : "";
+                if (estado == 6) {
+                    $("#comentarioContenedor").show();
+                    $("#txtComentarioAnulado").val(v.ComentarioAnulado);
+                }
+                else if ((estado == 1 || estado == 2) && estado != v.IdEstadoVale) {
+                    GenerarMensaje("Aviso de estado", proximaAlerta, 3);
+                }
+            }
+            else {
+                if (estado == 3 && v.cf != null) {
+                    GenerarMensaje("Aviso de estado", "El número de crédito fiscal será eliminado debido al estado que se ha seleccionado.", 3);
+                }
+                $("#txtOdometro").removeAttr("disabled");
+                $("#txtCantidadG").removeAttr("disabled");
+                $("#txtPrecioUGal").removeAttr("disabled");
+                $("#EstacionServicioList").data("kendoDropDownList").enable(true);
+                $("#comentarioContenedor").hide();
+            }
+        }
+    }
+
+    /*
+    function DeshabilitarControles() {
+        $("#txtCreditoFiscal").attr("disabled", true);
+        $("#txtOdometro").attr("disabled", true);
+        $("#txtCantidadG").attr("disabled", true);
+        $("#txtPrecioUGal").attr("disabled", true);
+        $("#txtTotal").attr("disabled", true);
+        $("#EstacionServicioList").data("kendoDropDownList").enable(false);
+        $("#chkCF").attr("disabled", true);
+        $("#lblCF").attr("disabled", true);
+        $("#btnActualizar").attr("disabled", true);
+    }
+    */
+
+    /*
+    function HabilitarControles() {
+        $("#txtCreditoFiscal").attr("disabled", true);
+        $("#txtOdometro").removeAttr("disabled");
+        $("#txtCantidadG").removeAttr("disabled");
+        $("#txtPrecioUGal").removeAttr("disabled");
+        $("#estado").data("kendoDropDownList").enable(true);
+        $("#EstacionServicioList").data("kendoDropDownList").enable(false);
+        $("#txtComentarioAnulado").attr("disabled", true);
+        $("#chkCF").attr("disabled", true);
+        $("#lblCF").attr("disabled", true);
+    }
+    */
+
+    function estado_DataBound() {
+        if (v != null) {
+            $("#estado").data("kendoDropDownList").value(v.IdEstadoVale);
+            estado_OnChange();
+            //if (v.UserTypeId == 1 || v.UserTypeId == 6 || v.UserTypeId == 7) DeshabilitarControles();
+            /*
+            if (v.EnableAnular == true) {
+                $("#estado").data("kendoDropDownList").enable(true);
+                $("#btnActualizar").removeAttr("disabled");
+                $("#txtComentarioAnulado").removeAttr("disabled");
+            }
+            else if (v.EnableAnular == false) {
+                $("#estado").data("kendoDropDownList").enable(false);
+                $("#btnActualizar").attr("disabled", true);
+                $("#txtComentarioAnulado").attr("disabled", true);
+            }
+            */
+        }
+    }
+
+    function EstadoData() {
+        var _i;
+
+        if (v == null) _i = 1;
+        else _i = v.IdEstadoVale;
+
+        return {
+            estadoId: _i
+        }
+    }
+
+    //Se encarga de eliminar el contenido actual del formulario para buscar otro
+    function LimpiarFormulario() {
+        $("#txtCreditoFiscal").val("");
+        $("#txtOdometro").val("");
+        $("#txtCantidadG").val("");
+        $("#txtPrecioUGal").val("");
+        $("#txtTotal").val("");
+        $("#estado").data("kendoDropDownList").value($("#estado").data("kendoDropDownList").dataSource.data()[0].IdEstado);
+        $("#EstacionServicioList").data("kendoDropDownList").value($("#EstacionServicioList").data("kendoDropDownList").dataSource.data()[0].id);
+        $("#txtComentarioAnulado").val("");
+    }
+
+    //Se encarga de retornar el valor de la variable global "ivaleid"
+    function GetValeId() {
+        return { idvale: ivaleid }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+
+        //Se encarga de obtener el total de dinero a pagar por la carga de combustible
+        $("#txtPrecioUGal, #txtCantidadG").on("keyup mouseup", function () {
+            var galones = $('#txtCantidadG').val() * 1;
+            var precioGalon = $('#txtPrecioUGal').val() * 1;
+            if (galones != "" && precioGalon != "" && galones > 0 && precioGalon > 0) {
+                tt = (galones * precioGalon).toFixed(2);
+                $("#txtTotal").val(tt);
+            }
+            else {
+                $("#txtTotal").val("");
+            }
+        });
+
+        //Permite al usuario hacer enter luego de esctibir el numero de vale, teniendo como focus el mismo input
+        $("#txtNumVale").keypress(function (e) {
+            if (e.which == 13) {
+                btn_Buscar_Onclick();
+            }
+        });
+
+        //Permite al usuario hacer enter luego de llenar el formulario, estando en cualquier input menos el de "No. vale"
+        $("#txtOdometro, #txtCantidadG, #txtPrecioUGal").keypress(function (e) {
+            if (e.which == 13) {
+                btnCorregir_Onclick();
+            }
+        });
+    });
+
+</script>
+<div class="page-wrapper">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Corregir Vale
+            </h3>
+            <small>Deste éste módulo podrá corregir la información de un vale.</small>
+        </div>
+        <div class="panel-body">
+            <div class="col-lg-12">
+                <div class="ibox-content" style="padding-left: 0px;">
+                    <div class="row">
+                        <div class="m-t-sm">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">No Vale:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtNumVale" class="txtTab k-textbox marginFivePx">
+                                            <button type="button" class="btn btn-primary" onclick="btn_Buscar_Onclick();">Buscar No. Vale</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Estado del vale:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            @Estado()
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Crédito fiscal:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtCreditoFiscal" class="txtTab k-textbox marginFivePx" disabled>
+                                            <input type="checkbox" id="chkCF" value="false" onclick="chkCF_OnChange();" hidden />  <label id="lblCF" hidden>Cambiar crédito fiscal</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Fecha de Crédito fiscal:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            @RenderPage("~/Views/PartialViews/Template/fechasimple5.cshtml")
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Odómetro:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="number" id="txtOdometro" class="txtTab k-textbox marginFivePx" step="1">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Cantidad Galones:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="number" id="txtCantidadG" class="txtTab k-textbox marginFivePx" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Precio Unitario por Galon $:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="number" id="txtPrecioUGal" class="txtTab k-textbox marginFivePx" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Total Dólares $:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="number" id="txtTotal" class="txtTab k-textbox marginFivePx" disabled step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Estación de Servicio:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            @EstacionServicioList()
+                                        </div>
+                                    </div>
+                                    <div class="form-group" id="comentarioContenedor" hidden>
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Comentario de anulación:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <textarea id="txtComentarioAnulado" class="txtTab k-textarea marginFivePx" style="min-width:50%; min-height: 80px; max-width: 50%; max-height: 80px; padding: 5px;"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4"></div>
+                                        <div class="col-lg-8">
+                                            <br />
+                                            <button type="button" id="btnActualizar" class="btn btn-primary" onclick="btnCorregir_Onclick();">Actualizar Vale</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <br />
+                                @GridValeCorregido()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@helper EstacionServicioList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("EstacionServicioList")
+        .DataTextField("name")
+        .DataValueField("id")
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ComboGasolineras", "Global");
+        })))
+        .HtmlAttributes(new { style = "width: 35%;" })
+    )
+}
+
+@helper GridValeCorregido()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.CorregirVale>()
+        .Name("GridValeCorregido")
+        .AutoBind(true)
+            .Columns(c =>
+            {
+                c.Bound(col => col.NumeroVale).Title("No. vale");
+                c.Bound(col => col.EstadoVale).Title("Estado");
+                c.Bound(col => col.CreditoFiscal).Title("Crédito Fiscal");
+                c.Bound(col => col.Odometro).Title("Odómetro");
+                c.Bound(col => col.CantidadGalones).Title("Cantidad de galones");
+                c.Bound(col => col.PrecioGalon).Title("Precio por galón $");
+                c.Bound(col => col.TotalPrecio).Title("Precio total $");
+                c.Bound(col => col.EstacionServicio).Title("Estación de servicio");
+            })
+        .Mobile(MobileMode.Auto)
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single).Type(GridSelectionType.Row))
+        .Resizable(resize => resize.Columns(true))
+        .Reorderable(a => a.Columns(true))
+        .ColumnMenu()
+        .Scrollable(s => s.Enabled(true))
+        .Sortable()
+        .Filterable()
+        .HtmlAttributes(new { style = "height:100%; " })
+        .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+            .Read(r => r.Action("obtenerValeGrid", "CorregirVale").Data("GetValeId"))
+        )
+    )
+}
+
+@helper Estado()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("estado")
+        .DataTextField("Estado")
+        .DataValueField("IdEstado")
+        .DataSource(
+            source => source.ServerFiltering(false)
+            .Custom()
+            .AutoSync(true)
+            .Transport(
+                transport => transport.Read(
+                    r => r.Action("ObtenerEstados", "Global").Data("EstadoData")
+                )
+            )
+        )
+        .Events(e => e.Change("estado_OnChange").DataBound("estado_DataBound"))
+    )
+}

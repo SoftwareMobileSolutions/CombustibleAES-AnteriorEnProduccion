@@ -1,0 +1,284 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Configuración > Administrar PEP";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    var cantPeps = 0;
+    var ultimoPep = 0;
+    var selected = 0;
+    var dt = [];
+    var data = [];
+    var leyendoDatos = false;
+    var guardandoDatos = false;
+
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    function duplicado(str, array) {
+        for (i = 0; i < array.length; i++) {
+            if (array[i].name === str) {
+                return true;
+            }
+        };
+        return false;
+    }
+
+    function excels_select(e) {
+        warnings = 0;
+        var cantArchivos = e.files.length;
+        if (cantArchivos == 1 && (cantArchivos + selected == 1)) {
+            $.each(e.files, function (i) {
+                if (e.files[i].extension == ".xlsx" || e.files[i] == ".xls" || e.files[i].extension == ".XLSX" || e.files[i] == ".XLS") {
+                    if (duplicado(e.files[i].name, dt) === false) {
+                        dt.push(e.files[i]);
+                    }
+                    else {
+
+                        GenerarMensaje("Aviso", "Los archivos duplicados no serán tomados en cuenta.", 3);
+                        e.preventDefault();
+                        warnings++;
+                    }
+                }
+                else {
+                    e.preventDefault();
+                    GenerarMensaje("Aviso", "Solo se admiten archivos con extensión '.xlsx' ó '.xls'.", 3);
+                    warnings++;
+                }
+            });
+        }
+        else if (e.files.length > 1) {
+            e.preventDefault();
+            GenerarMensaje("Aviso", "No puede subir más de un archivo a la vez.", 3);
+            warnings++;
+        }
+        if (warnings <= 0) {
+            for (i = 0; i < e.files.length; i++) {
+                selected++;
+            }
+            GenerarMensaje("Aviso", "Leyendo datos del archivo excel.<br/>Por favor espere...", 2);
+            leyendoDatos = true;
+        }
+        else {
+            dt.splice(dt.length - 1, 1);
+        }
+        e.files = dt;
+    }
+    var DataGlobal;
+    function excels_Success(e) {
+        console.log("e:",e)
+        console.log("codigo : ", e.response.codigo)
+        if (e.response.codigo == -1 || e.response.codigo == -2) {
+            GenerarMensaje("Aviso", e.response.mensaje, e.response.nivel);
+        }
+        else {
+            data = e.response.PEPs;
+            DataGlobal = data;
+            guardandoDatos = true;
+            GenerarMensaje("Aviso", "Información leída exitosamente. Almacenando datos.<br/>Por favor espere...", 2);
+            console.log("DataGlobal", data)
+            $("#GridPEP").data("kendoGrid").dataSource.read();
+            //$.post(
+            //    "../CargaPEP/InsertarPeps",
+            //    { lpeps: data },
+            //    function (e) {
+            //        guardandoDatos = false;
+            //        data = [];
+            //        data = e;
+            //        GenerarMensaje("Aviso", "PEPs guardados exitosamente.<br>Ahora ya puede cargar los datos.", 2);
+            //        CargarDatosExcel();
+            //    }
+            //);
+            //leyendoDatos = false;
+        }
+        selected = 0;
+    }
+
+    function CargarDatosExcel() {
+        if (dt != "") {
+            $.post(
+                "../CargaPEP/InsertarPeps",
+                { lpeps: DataGlobal },
+                function (e) {
+                    guardandoDatos = false;
+                    data = [];
+                    data = e;
+                    GenerarMensaje("Aviso", "PEPs guardados exitosamente.<br>Ahora ya puede cargar los datos.", 2);
+                    //CargarDatosExcel();
+                }
+            );
+            leyendoDatos = false;
+
+            if (!leyendoDatos) {
+                if (!guardandoDatos) {
+                    $("#GridPEP").data("kendoGrid").dataSource.read();
+                }
+                else {
+                    GenerarMensaje("Aviso", "Por favor espere a que los datos terminen de guardarse en la base de datos.", 3);
+                }
+            }
+            else {
+                GenerarMensaje("Aviso", "Por favor espere mientras se leen los datos del archivo excel.", 3);
+            }
+        }
+        else GenerarMensaje("Aviso", "Primero ingrese el archivo excel del cual desea cargar datos.", 3);
+
+    }
+
+    function GridData() {
+        return {
+            peps: data
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+        $(".k-upload-button").ready(function () {
+            $(".k-upload-button").click(function () {
+                dt = [];
+                datosGuardados = false;
+                $("#excels").data("kendoUpload").clearAllFiles();
+            });
+        });
+    });
+</script>
+<style>
+    tr, td {
+        border: 1px solid white;
+        padding: 5px;
+        text-align: left;
+    }
+
+    .disable-select {
+        user-select: none; /* supported by Chrome and Opera */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+    }
+</style>
+<div class="page-wrapper">
+    <div class="panel panel-default" style="height:100%;">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Carga de Archivos PEP
+            </h3>
+            <small>Desde éste módulo podrá ingresar los archivos excel con el contenido de los nuevos PEP.</small>
+        </div>
+        <div class="panel-body" style="height: 100%;">
+            <div class="col-lg-12" style="height: 100%;">
+                <div class="row" style="height: 100%; margin-bottom: 5px; margin-top: -10px;">
+                    <span class="pull-left" style="width: 38%;">
+                        <label>Archivos PEP:</label>@Peps()
+                    </span>
+                </div>
+                <div class="row" style="height: 100%;">
+                    <span id="filtrosControles" class="pull-left text-right">
+                        <br />
+                        <button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="CargarDatosExcel()">Cargar datos</button>
+                    </span>
+                    <div class="m-t-sm" style="height: 100%">
+                        <div class="row" style="height: 100%;">
+                            <div class="col-md-12" style="height: 100%; margin-top: 10px;">
+                                @GridPEP()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper GridPEP()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.PEPs>()
+        .Name("GridPEP")
+        .AutoBind(false)
+        .Columns(col =>
+        {
+            col.Bound(c => c.PEP).Title("PEP");
+            col.Bound(c => c.NombreProyecto).Title("Nombre del Proyecto");
+            col.Bound(c => c.Responsabe).Title("Responsable");
+            col.Bound(c => c.Estado).Title("Estado");
+        })
+        .Filterable(f => f
+            .Mode(GridFilterMode.Row)
+            .Operators(ops => ops.
+                ForString(str => str
+                    .Clear()
+                    .Contains("Contiene")
+                    .IsEqualTo("Es igual a")
+                )
+            )
+        )
+        .Selectable(s => s.Mode(GridSelectionMode.Multiple))
+        .PersistSelection(true)
+        .Mobile(MobileMode.Auto)
+        .Sortable()
+        .Pageable(x =>
+        {
+            x.Enabled(true);
+            x.PreviousNext(true);
+            x.PageSizes(true);
+            x.Info(true);
+            x.Input(true);
+            x.Numeric(false);
+            x.PageSizes(new List<object> { 20, 30, 40, 50, 100 }).Refresh(false);
+
+        })
+        .NoRecords(nr => nr.Template("<h1 style='   font-color: gray;'>No hay registros para mostrar.</h1>"))
+        .Scrollable()
+        .DataSource(ds => ds.Ajax().PageSize(100).Read(r => r.Action("ObtenerListaPeps", "CargaPEP").Data("GridData")))
+    )
+}
+
+@helper Peps()
+{
+    @(Html.Kendo().Upload()
+        .Name("excels")
+        .Async(
+            a => a.Save("GuardarExcel", "CargaPEP")
+            //.AutoUpload(true)
+            .AutoUpload(true)
+        )
+        .Events(
+            e => e.Select("excels_select").Success("excels_Success")
+        )
+        .Multiple(true)
+        //.Validation(v => v.AllowedExtensions(new string[] { ".xlsx", "xls" }))
+        .HtmlAttributes(new { style = "width: 100%;" })
+    )
+}

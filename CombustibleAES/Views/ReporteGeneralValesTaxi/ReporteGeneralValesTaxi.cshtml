@@ -1,0 +1,233 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Taxi > Reporte General Vales Taxi";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    //1 = fecha de generacion; 2 = fecha de actualizacion; 3 = fecha de credito fiscal;
+    var _filtro = 1; //4 = número de vale; 5 = número de crédito fiscal
+    var token = 0;
+
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    function ObtenerInfoReporte() {
+        var fechaIni = moment($("#fecha_inicio").val()).format("YYYYMMDD HH:mm:ss");
+        var fechaFin = moment($('#fecha_fin').val()).format("YYYYMMDD HH:mm:ss");
+        var _idvale = $("#integerInput").val();
+        var _creditoFiscal = $("#txtCreditoFiscal").val();
+        return {
+            strFechaInicio: fechaIni,
+            strFechaFin: fechaFin,
+            numVale: parseInt(_idvale),
+            creditoFiscal: _creditoFiscal,
+            filtro: parseInt(_filtro)
+        }
+    }
+
+    function GenerarReporte() {
+        $('#GridValesGeneral').data('kendoGrid').dataSource.read();
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla(){
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    //Se encarga de esconder cada uno de los controles de filtrado
+    function esconderControles() {
+        $("#controlesFecha").hide();
+        $("#controlesNumeroVale").hide();
+        $("#controlesCodigoFiscal").hide();
+        $("#integerInput").data("kendoNumericTextBox")._text.val(0);
+        $("#integerInput").data("kendoNumericTextBox").element.val(0);
+        $("#txtCreditoFiscal").val("");
+    }
+
+    //Se encarga de mostrar el o los controles adecuados según el valor seleccionado del DropDownList "filtro"
+    function filtro_OnChange() {
+        var valor = $("#filtro").data("kendoDropDownList").value();
+        esconderControles();
+        switch (valor) {
+            case "Fecha de generación":
+                $("#controlesFecha").show();
+                _filtro = 1;
+                break;
+
+            case "Fecha de crédito fiscal":
+                $("#controlesFecha").show();
+                _filtro = 2;
+                break;
+
+            case "Número de vale":
+                $("#controlesNumeroVale").show();
+                $("#integerInput").data("kendoNumericTextBox").focus();
+                _filtro = 3;
+                break;
+
+            case "Número de crédito fiscal":
+                $("#controlesCodigoFiscal").show();
+                $("#txtCreditoFiscal").focus();
+                _filtro = 4;
+                break;
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+
+        //Permite al usuario hacer enter luego de ingresar un valor en un input, teniendo como focus el mismo
+        $("#integerInput, #txtCreditoFiscal").keypress(function (e) {
+            if (e.which == 13) {
+                GenerarReporte();
+            }
+        });
+    });
+</script>
+<div class="page-wrapper">
+    <div class="panel panel-default" style="height:100%;">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Reporte General de Vales de Taxi
+            </h3>
+            <small>Desde éste módulo podrá generar reportes de todos los vales de taxi generados.</small>
+        </div>
+        <div class="panel-body" style="height: 100%;">
+            <div class="col-lg-12" style="height: 100%;">
+                <div class="row" style="height: 100%; margin-bottom: 5px; margin-top: -10px;">
+                    <span class="pull-right text-right">
+                        <label>Filtro de datos por:&nbsp;</label>@DropDownOpciones()
+                    </span>
+                </div>
+                <div class="row" style="height: 100%;">
+                    <span id="filtrosControles" class="pull-right text-right">
+                        <div id="controlesFecha" style="margin-bottom: 5px;">
+                            <label>Fecha Inicio:</label>@RenderPage("~/Views/PartialViews/Template/fechainicio.cshtml")
+                            <label>Fecha Fin:</label>@RenderPage("~/Views/PartialViews/Template/fechafin.cshtml")
+                        </div>
+                        <div id="controlesNumeroVale" style="margin-bottom: 5px;" hidden>
+                            <label>Número de vale:</label>&nbsp;@RenderPage("~/Views/PartialViews/Template/Integer.cshtml")
+                        </div>
+                        <div id="controlesCodigoFiscal" style="margin-bottom: 5px;" hidden>
+                            <label>Crédito fiscal:</label>&nbsp;<input type="text" id="txtCreditoFiscal" class="txtTab k-textbox marginFivePx" />
+                        </div>
+                        <button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="GenerarReporte()">Generar</button>
+                    </span>
+                    <div class="m-t-sm" style="height: 100%">
+                        <div class="row" style="height: 100%;">
+                            <div class="col-md-12" style="height: 100%; margin-top: 10px;">
+                                @GridValesGeneral()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper GridValesGeneral()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.ReportesValesTaxi>()
+        .Name("GridValesGeneral")
+        .AutoBind(true)
+        .Columns(col =>
+        {
+            col.Bound(c => c.CreditoFiscal).Title("Crédito Fiscal").Width(200);
+            col.Bound(c => c.NoVale).Title("Vale").Width(200);
+            col.Bound(c => c.Area).Title("Área").Width(200);
+            col.Bound(c => c.Empresa).Title("Empresa").Width(200);
+            col.Bound(c => c.Pasajero).Title("Pasajero").Width(200);
+            col.Bound(c => c.Origen).Title("Origen").Width(200);
+            col.Bound(c => c.Destino).Title("Destino").Width(200);
+            col.Bound(c => c.CentroCosto).Title("Centro Costo").Width(200);
+            col.Bound(c => c.OrdenEstadistica).Title("Orden").Width(200);
+            col.Bound(c => c.Sociedad).Title("Sociedad").Width(200);
+            col.Bound(c => c.Cuenta).Title("Cuenta").Width(200);
+            col.Bound(c => c.Monto).Title("Monto").Width(200);
+            col.Bound(c => c.Estado).Title("Estado").Width(200);
+            col.Bound(c => c.FechaGeneracion).Title("Fecha Generación").Width(200);
+            col.Bound(c => c.FechaCF).Title("Fecha Crédito Fiscal").Width(200);
+            col.Bound(c => c.UsuarioGeneracion).Title("Usuario Generación").Width(200);
+        })
+        .Filterable(f => f
+            .Mode(GridFilterMode.Row)
+            .Operators(ops => ops.
+                ForString(str => str
+                    .Clear()
+                    .Contains("Contiene")
+                    .IsEqualTo("Es igual a")
+                )
+            )
+        )
+        .Excel(exc => exc.AllPages(true).FileName("RpteValesGeneral.xlsx"))
+        .Mobile(MobileMode.Auto)
+        .Selectable(s => s.Mode(GridSelectionMode.Multiple))
+        .Reorderable(re => re.Columns(true))
+        .Sortable()
+        .Pageable(x =>
+        {
+            x.Enabled(true);
+            x.PreviousNext(true);
+            x.PageSizes(true);
+            x.Info(true);
+            x.Input(true);
+            x.Numeric(false);
+            x.Refresh(false);
+            x.PageSizes(new List<object> { 20, 30, 40, 50, 100 }).Refresh(true);
+
+        })
+        .NoRecords(nr => nr.Template("<h1 style='   font-color: gray;'>No hay registros para mostrar.</h1>"))
+        .Navigatable()
+        .Excel(excel => excel
+        .FileName("RpteValesGeneral").AllPages(true)
+        .Filterable(true))
+        .ToolBar(tb => tb.Excel().Text("Exportar a Excel"))
+        .Scrollable()
+        .HtmlAttributes(new { style = "width: 100%; heigth: 210px;" })
+        .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+        .Read(r => r.Action("ObtenerReporteGeneralTaxi", "ReporteGeneralValesTaxi").Data("ObtenerInfoReporte"))
+        )
+    )
+}
+
+@helper DropDownOpciones()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("filtro")
+        .BindTo(
+            new List<string>() {
+                "Fecha de generación", "Fecha de crédito fiscal", "Número de vale", "Número de crédito fiscal"
+            }
+        )
+        .HtmlAttributes(new { style = "width: 165px;" })
+        .Events(e => e.Change("filtro_OnChange"))
+    )
+}

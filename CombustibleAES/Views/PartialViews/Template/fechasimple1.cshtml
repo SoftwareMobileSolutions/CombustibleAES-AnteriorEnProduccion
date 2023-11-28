@@ -1,0 +1,46 @@
+﻿<script type="text/javascript">
+    //Colocar mascara a los datatimepicker para cuando se vaya digitando no coloquen mas o menos valores de los que correpsonden
+    function MaskDTFin() {
+        $("#fechasimple1").kendoMaskedTextBox({
+                                                  mask: "0000/00/00"
+                                              }).removeClass("k-textbox");
+    }
+
+    //Cuando sale del foco del datetimepicker ejecutar lo siguiente
+    var DateTimeNow, fechafin;
+    
+    $(document).on("focusout", "#fecha_fin", function () {
+        ValFechaFin();
+    });
+    //Validar fecha de Fin
+    function ValFechaFin() {
+        fechafin = GetDatePickerVal("fechasimple1");
+        DateTimeNow = moment().format('YYYY/MM/DD');
+        (!(fechafin instanceof Date)) && ($("#fechasimple1").val(DateTimeNow), $("#fechasimple1").data("kendoDateTimePicker").value(DateTimeToday), fechafin = GetDatePickerVal("fechasimple1"));  //Si la fehca no es valida que la resetee hasta a fecha actual y hora actual
+    }
+    
+    $(window).load(function () {
+        MaskDTFin();
+        fechafin = GetDatePickerVal("fechasimple1");
+    });
+</script>
+    
+@using CombustibleAES.Models;
+    
+@{
+    LogIn Usuario;
+    Usuario = this.Session["User"] as LogIn;
+    var user = new { timezone = -6 };
+}
+      
+@(Html.Kendo()
+      .DatePicker()
+      .Name("fechasimple1")
+      .Format("yyyy/MM/dd")
+      .Value(DateTime.Now.AddHours(user.timezone))
+      .Max(DateTime.Now.AddHours(user.timezone))
+      .Min("1900/01/01")
+      .Culture("es-MX")
+          .HtmlAttributes(new { style = "width:120px", placeholder = "____/__/__", type = "text" })
+      .Events(e => e.Change("fechasimple1_Change"))
+)

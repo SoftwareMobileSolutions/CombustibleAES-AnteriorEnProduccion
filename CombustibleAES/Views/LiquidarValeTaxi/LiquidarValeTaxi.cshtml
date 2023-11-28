@@ -1,0 +1,517 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Taxi > Liquidar Vale";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    var tmp = null;
+    var ivaleid = 0;
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    function btn_Buscar_Onclick() {
+        numVale = $('#txtNumVale').val();
+        if (numVale != "") { //Se verifica que se haya ingresado el numero de un vale previamente.
+            console.log(numVale);
+            if (numVale != ivaleid) {
+                $.post("../LiquidarValeTaxi/ObtenerVale", {
+                    IdVale: numVale
+                },
+                function (data) {
+                    if (data.codigo <= 0) {
+                        LimpiarFormulario();
+                        ivaleid = 0;
+                        GenerarMensaje("Aviso", data.mensaje, 4);
+                    } else {
+                        var vale = data.vale;
+                        tmp = vale.Desde;
+                        if (tmp == "" || tmp == null) {
+                            $("#txtDesde").removeAttr("disabled");
+                        }
+                        else {
+                            $("#txtDesde").attr("disabled", true);
+                        }
+                        LimpiarFormulario();
+                        ivaleid = vale.NoVale;
+                        $("#EmpresaList").data("kendoDropDownList").value(vale.IdEmpresa);
+                        $("#txtPasajero").val(vale.Pasajero);
+                        $("#txtDesde").val(vale.Desde);
+                        $("#txtFecha").val(vale.FechaGeneracion);
+                        $("#AreaList").data("kendoDropDownList").value(vale.IdArea);
+                        $("#txtCCosto").val(vale.CentroCosto);
+                        $("#txtOrdenEstadistica").val(vale.OrdenEstadistica);
+                        $("#TipoUnidadList").data("kendoDropDownList").value(vale.IdTipoUnidad);
+                        $("#txtHacia1").val(vale.Destino1);
+                        $("#txtHacia2").val(vale.Destino2);
+                        $("#txtHacia3").val(vale.Destino3);
+                        $("#txtConductor").val(vale.Conductor);
+                        $("#txtMonto").val(vale.MontoVale);
+                        $("#txtNoVehiculo").val(vale.NoVehiculo);
+                    }
+                });
+            }
+            else {
+                GenerarMensaje("Atención", "La información actual pertenece al vale No. " + ivaleid + ".", 1);
+            }
+        }
+        else { //No se ha ingresado el numero de vale.
+            GenerarMensaje("Aviso", "Primero ingrese el número de vale taxi a buscar.", 3);
+        }
+    }
+
+    function btnActualizar_Onclick() {
+        if (ivaleid != 0) { //Se verifica que se haya buscado un vale previamente
+            var _hacia1 = $("#txtHacia1").val();
+            var _hacia2 = $("#txtHacia2").val();
+            var _hacia3 = $("#txtHacia3").val();
+            var _fechaSalida = $("#fechaSalida").data("kendoDateTimePicker").value();
+            var _fechaLlegada = $("#fechaLlegada").data("kendoDateTimePicker").value();
+            var _conductor = $("#txtConductor").val();
+            var _monto = $("#txtMonto").val();
+            var _noVehiculo = $("#txtNoVehiculo").val();
+            var _desde = $("#txtDesde").val();
+            var desdeValidado = false;
+
+            if (tmp == "" || tmp == null) {
+                if (_desde != "") {
+                    desdeValidado = true;
+                }
+                else {
+                    GenerarMensaje("Aviso", "Por favor ingrese el lugar de desde el cual partió el viaje.", 4);
+                }
+            }
+            else {
+                desdeValidado = true;
+            }
+
+            if (desdeValidado) {
+                if (_hacia1 != "") {
+                    if (_fechaSalida != null) {
+                        _fechaSalida = moment(_fechaSalida).format("YYYYMMDD HH:mm:ss");
+                        if (_fechaLlegada != null) {
+                            _fechaLlegada = moment(_fechaLlegada).format("YYYYMMDD HH:mm:ss");
+                            if (_conductor != "") {
+                                if (_monto != "") {
+                                    if (_monto > 0) {
+                                        if (_noVehiculo != "") {
+                                            $.post("../LiquidarValeTaxi/LiquidarVale", {
+                                                desde: _desde, IdVale: ivaleid, Destino1: _hacia1, Destino2: _hacia2, Destino3: _hacia3, FechaSalida: _fechaSalida,
+                                                FechaLlegada: _fechaLlegada, Conductor: _conductor, MontoVale: _monto, NoVehiculo: _noVehiculo
+                                            },
+                                                function (data) {
+                                                    if (data.codigo == 1) {
+                                                        GenerarMensaje("¡Éxito!", data.mensaje, 2);
+                                                        $("#GridValeActualizado").data("kendoGrid").dataSource.read();
+                                                        ivaleid = 0; //Se resetea el numero de vale almacenado en la variable "ivaleid"
+                                                        LimpiarFormulario();
+                                                        $("#txtNumVale").val("");
+                                                    } else {
+                                                        GenerarMensaje("Aviso", data.mensaje, 4);
+                                                    }
+                                                });
+                                        }
+                                        else {
+                                            GenerarMensaje("Aviso", "Por favor ingrese el número de vehículo.", 4);
+                                        }
+                                    }
+                                    else {
+                                        GenerarMensaje("Aviso", "El monto del val debe ser mayor a $0.00.", 4);
+                                    }
+                                }
+                                else {
+                                    GenerarMensaje("Aviso", "Por favor ingrese el monto del vale.", 4);
+                                }
+                            }
+                            else {
+                                GenerarMensaje("Aviso", "Por favor ingrese el nombre del conductor.", 4);
+                            }
+                        }
+                        else {
+                            GenerarMensaje("Aviso", "Por favor ingrese la fecha de llegada", 4);
+                        }
+                    }
+                    else {
+                        GenerarMensaje("Aviso", "Por favor ingrese la fecha de salida.", 4);
+                    }
+                }
+                else {
+                    GenerarMensaje("Aviso", "Por favor ingrese el primer lugar de destino (Hacia)", 4);
+                }
+            }
+        }
+        else { //No se ha buscado ningun vale.
+            GenerarMensaje("Aviso", "Para actualizar la información de un vale, primero ingrese el número de vale y luego haga clic en 'Buscar No. Vale'.", 3);
+        }
+    }
+
+    //Se encarga de eliminar el contenido actual del formulario para buscar otro
+    function LimpiarFormulario() {
+        $("#EmpresaList").data("kendoDropDownList").select(0);
+        $("#txtPasajero").val("");
+        $("#txtDesde").val("");
+        $("#txtFecha").val("");
+        $("#AreaList").data("kendoDropDownList").select(0);
+        $("#txtCCosto").val("");
+        $("#txtOrdenEstadistica").val("");
+        $("#TipoUnidadList").data("kendoDropDownList").select(0);
+        $("#txtHacia1").val("");
+        $("#txtHacia2").val("");
+        $("#txtHacia3").val("");
+        $("#fechaSalida").data("kendoDateTimePicker").value(new Date());
+        $("#fechaLlegada").data("kendoDateTimePicker").value(new Date());
+        $("#txtConductor").val("");
+        $("#txtMonto").val("");
+        $("#txtNoVehiculo").val("");
+    }
+
+    //Se encarga de retornar el valor de la variable global "ivaleid"
+    function GetValeId() {
+        return { IdVale: ivaleid }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla(){
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+
+        //Permite al usuario hacer enter luego de escribir el numero de vale, teniendo como focus el mismo input
+        $("#txtNumVale").keypress(function (e) {
+            if (e.which == 13) {
+                btn_Buscar_Onclick();
+            }
+        });
+
+        //Permite al usuario hacer enter luego de llenar el formulario, estando en cualquier input menos el de "No. vale"
+        $("#txtHacia1, #txtHacia2, #txtHacia3, #txtConductor, #txtMonto, #txtNoVehiculo").keypress(function (e) {
+            if (e.which == 13) {
+                btnActualizar_Onclick();
+            }
+        });
+    });
+
+</script>
+<div class="page-wrapper">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Liquidar vale de taxi.
+            </h3>
+            <small>Desde éste módulo podrá liquidar un vale de taxi ya existente</small>
+        </div>
+        <div class="panel-body">
+            <div class="col-lg-12">
+                <div class="ibox-content" style="padding-left: 0px;">
+                    <div class="row">
+                        <div class="m-t-sm">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">No. Vale:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtNumVale" class="txtTab k-textbox marginFivePx" />
+                                            <button type="button" class="btn btn-primary" onclick="btn_Buscar_Onclick();">Buscar No. Vale</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Hacia:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtHacia1" class="txtTab k-textbox marginFivePx" placeholder="Destino 1" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Empresa:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            @EmpresaList()
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label"></label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtHacia2" class="txtTab k-textbox marginFivePx" placeholder="Destino 2 (Opcional)" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Pasajero:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtPasajero" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label"></label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtHacia3" class="txtTab k-textbox marginFivePx" placeholder="Destino 3 (Opcional)" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Desde:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtDesde" disabled class="txtTab k-textbox marginFivePx" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Fecha salida:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            @FechaSalida()
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Fecha emisión:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtFecha" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Fecha llegada:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            @FechaLlegada()
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Área:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            @AreaList()
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Conductor:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtConductor" class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Centro Costo:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtCCosto" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Monto vale:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="number" id="txtMonto" class="txtTab k-textbox marginFivePx" step="0.01">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Orden Estadística:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtOrdenEstadistica" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">No. vehiculo:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <input type="text" id="txtNoVehiculo" class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="col-lg-2">
+                                            <label class="control-label">Tipo Unidad:</label>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            @TipoUnidadList()
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-2"></div>
+                                        <div class="col-lg-4">
+                                            <button type="button" class="btn btn-primary" onclick="btnActualizar_Onclick();" style="margin-top: 5px;">Actualizar Vale</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <br />
+                                @GridValeActualizado()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper EmpresaList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("EmpresaList")
+        .Enable(false)
+        .DataTextField("empresa")
+        .DataValueField("empresaid")
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ComboEmpresas", "Global");
+        })))
+    )
+}
+
+@helper AreaList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("AreaList")
+        .Enable(false)
+        .DataTextField("NombreArea")
+        .DataValueField("IdArea")
+        .HtmlAttributes(new { style = "width:250px;" })
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ObtenerAreas", "Global");
+        })))
+    )
+}
+
+@helper TipoUnidadList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("TipoUnidadList")
+        .Enable(false)
+        .DataTextField("Tipo")
+        .DataValueField("IdTipo")
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ObtenerTipoUnidad", "Global");
+        })))
+    )
+}
+
+@helper FechaSalida()
+{
+    @(Html.Kendo().DateTimePicker()
+        .Name("fechaSalida")
+        .Value(DateTime.Now)
+        .HtmlAttributes(new { style = "width: 70%;" })
+    )
+}
+
+@helper FechaLlegada()
+{
+    @(Html.Kendo().DateTimePicker()
+        .Name("fechaLlegada")
+        .Value(DateTime.Now)
+        .HtmlAttributes(new { style = "width: 70%;" })
+    )
+}
+
+@helper GridValeActualizado()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.ValeTaxi>()
+        .Name("GridValeActualizado")
+        .AutoBind(false)
+            .Columns(c =>
+            {
+                c.Bound(col => col.NoVale).Title("No. Vale");
+                c.Bound(col => col.Destino1).Title("Destino 1");
+                c.Bound(col => col.Destino2).Title("Destino 2");
+                c.Bound(col => col.Destino3).Title("Destino 3");
+                c.Bound(col => col.FechaSalida).Title("Fecha salida");
+                c.Bound(col => col.FechaLlegada).Title("Fecha llegada");
+                c.Bound(col => col.Conductor).Title("Conductor");
+                c.Bound(col => col.MontoVale).Title("Monto vale ($)");
+                c.Bound(col => col.NoVehiculo).Title("No. Vehiculo");
+            })
+        .Mobile(MobileMode.Auto)
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single).Type(GridSelectionType.Row))
+        .Resizable(resize => resize.Columns(true))
+        .Reorderable(a => a.Columns(true))
+        .ColumnMenu()
+        .Scrollable(s => s.Enabled(true))
+        .Sortable()
+        .Filterable()
+        .HtmlAttributes(new { style = "height:100%; " })
+        .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+            .Read(r => r.Action("ObtenerValeLiquidado", "LiquidarValeTaxi").Data("GetValeId"))
+        )
+    )
+}

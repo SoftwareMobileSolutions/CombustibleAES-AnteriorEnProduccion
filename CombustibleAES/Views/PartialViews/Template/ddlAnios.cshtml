@@ -1,0 +1,5 @@
+﻿@(Html.Kendo()
+    .DropDownList()
+    .Name("anios")
+    .HtmlAttributes(new { style="width: 75px !important;" })
+    .BindTo(Enumerable.Range(2010, Convert.ToInt32(DateTime.Now.ToString("yyyy")) - 2010 + 1).Reverse().ToList()))    

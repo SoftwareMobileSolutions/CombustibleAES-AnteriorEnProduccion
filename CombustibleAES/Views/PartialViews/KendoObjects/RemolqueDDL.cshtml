@@ -1,0 +1,20 @@
+﻿@(Html.Kendo().DropDownList()
+    .Name("DDLRemolque")
+    .DataTextField("texto")
+    .DataValueField("valor")
+    //.Events(e => e.Change("DDLRemolque_Change").DataBound("DDLRemolque_DataBound"))
+    .HtmlAttributes(new { style = "width:250px;" })
+    .Filter("contains")
+    .DataSource(source => source
+    .ServerFiltering(false)
+    .Custom()
+    .AutoSync(true)
+    .Transport(transport => transport
+    .Read(read =>
+    {
+        read.Action("DDLClientes", "Global");
+    })))
+)
+
+
+

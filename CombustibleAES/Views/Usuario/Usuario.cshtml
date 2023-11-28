@@ -1,0 +1,453 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Configuración > Administración de Usuarios";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+
+    var accion = 0;//0=Nuevo;1=Modificar
+    var idTemp = 0; //userid temporal
+    var iCambiarContra = 0; // Para determinar si se va cambiar la contraseña.
+
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+
+    function LimpiarCampos() {
+        $('#txtUsuario').val("");
+        $('#txtNombre').val("");
+        $('#txtApellido').val("");
+        $('#txtContrasenia').val("");
+        $('#txtEmail').val("");
+        $('#txtuserid').val("");
+    }
+
+    function updateModal() {
+        accion = 1;
+        //$('#divCS').show();
+        $('#TemaModal').html("Modificar Usuario");
+        $('#txtUsuario').prop("disabled", true);
+        $('#chkCambiarContra').prop('checked', false);
+        document.getElementById('divgaslist').style.visibility = 'visible';
+        document.getElementById('chkCambiarContra').style.visibility = 'visible';
+        document.getElementById('lblCambiarC').style.visibility = 'visible';
+    }
+
+    function newModal() {
+        accion = 0;
+        LimpiarCampos();
+        $('#TemaModal').html("Nuevo Usuario");
+        $('#txtUsuario').prop("disabled", false);
+        $('#chkCambiarContra').prop('checked', true);
+        $('#txtContrasenia').prop("disabled", false);
+        document.getElementById('chkCambiarContra').style.visibility = 'hidden';
+        document.getElementById('lblCambiarC').style.visibility = 'hidden';
+    }
+
+    function btn_Guardar_Onclick() {
+
+        var gasID = 0;
+        if ($("#ProfileList").data("kendoDropDownList").value() == "4") {
+            gasID = $("#GasolineraList").data("kendoDropDownList").value();
+        }
+
+        if (accion == 0) {
+            // Nuevo usuario.
+            if ($('#txtUsuario').val() == "") {
+                GenerarMensaje("Aviso", "Debe ingresar un nombre de usuario", 4);
+            } else {
+                if ($('#txtContrasenia').val() == "") {
+                    GenerarMensaje("Aviso", "Debe ingresar una contraseña para el usuario", 4);
+                } else {
+                    // Paso los filtros procedemos a ingresar el usuario.
+                    $.post("../Usuario/InsertarUsuario", {
+                        usuario: $('#txtUsuario').val(), nombre: $('#txtNombre').val(), apellido: $('#txtApellido').val(),
+                        contrasenia: $('#txtContrasenia').val(), email: $('#txtEmail').val(), usertypeid: $("#ProfileList").data("kendoDropDownList").value(), gasolineraID: gasID
+                    },
+                        function (data) {
+                            var respuesta = data;
+                            if (respuesta.codigo < 0) {
+                                GenerarMensaje("Aviso", "Ha ocurrido un error al insertar el usuario, intente nuevamente. " + respuesta.mensaje, 4);
+                            } else {
+                                GenerarMensaje("¡Éxito!", "Usuario ingresado satisfactoriamente.", 2);
+                                LimpiarCampos();
+                                $('#GridUsuarios').data('kendoGrid').dataSource.read();
+                            }
+                        });
+                }
+            }
+        } else {
+            // Modificar usuario.
+            if ($('#txtContrasenia').val() == "") {
+                GenerarMensaje("Aviso", "Debe ingresar una contraseña para el usuario", 4);
+            } else {
+                $.post("../Usuario/ActualizarUsuario", {
+                    userid: idTemp, nombre: $('#txtNombre').val(), apellido: $('#txtApellido').val(),
+                    contrasenia: $('#txtContrasenia').val(), email: $('#txtEmail').val(), usertypeid: $("#ProfileList").data("kendoDropDownList").value(),
+                    activo: $("#activoList").data("kendoDropDownList").value(), gasolineraID: gasID, actualizarcontra: iCambiarContra
+                },
+                    function (data) {
+                        var respuesta = data;
+                        if (respuesta.codigo < 0) {
+                            GenerarMensaje("Aviso", "Ha ocurrido un error al actualizar el usuario, intente nuevamente", 4);
+                        } else {
+                            GenerarMensaje("¡Éxito!", "Usuario actualizado satisfactoriamente.", 2);
+                            LimpiarCampos();
+                            $('#GridUsuarios').data('kendoGrid').dataSource.read();
+                        }
+                    });
+            }
+        }
+
+    }
+
+    function chkCambiarContra_onclick() {
+        if (!$('#chkCambiarContra').prop('checked')) {
+            iCambiarContra = 0;
+            $('#txtContrasenia').val("123456");
+            $('#txtContrasenia').prop("disabled", true);
+        } else {
+            iCambiarContra = 1;
+            $('#txtContrasenia').val("");
+            $('#txtContrasenia').prop("disabled", false);
+        }
+    }
+
+
+    function ProfileList_onChange() {
+        $("#ProfileList").data("kendoDropDownList").value();
+        if ($("#ProfileList").data("kendoDropDownList").value() == "4") {
+            document.getElementById('divgaslist').style.display = 'block'
+        } else {
+            document.getElementById('divgaslist').style.display = 'none'
+        }
+    }
+
+
+    function GridUsuario_Change() {
+        accion = 1;
+        LimpiarCampos();
+        var data = this.dataItem(this.select());
+        if (Object.is(data, null) === false) {
+            idTemp = data.userid;
+            $('#txtUsuario').val(data.usuario);
+            $('#txtNombre').val(data.nombre);
+            $('#txtApellido').val(data.apellido);
+            $('#txtEmail').val(data.email);
+            $('#txtContrasenia').val("123456");
+            $("#ProfileList").data("kendoDropDownList").value(data.usertypeid);
+            if (data.usertypeid == 4) {
+                document.getElementById('divgaslist').style.display = 'block'
+                $("#GasolineraList").data("kendoDropDownList").value(data.gasolineraID);
+            } else {
+                document.getElementById('divgaslist').style.display = 'none'
+            }
+            $('#activoList').data("kendoDropDownList").value(data.activoid);
+            $('#updateModal').click();
+        }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+    });
+
+</script>
+<div class="page-wrapper">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Nombre Usuarios
+            </h3>
+            <small>Módulo para ingresar y modificar los usuarios del sistema de vales de combustible.</small>
+        </div>
+        <div class="panel-body">
+            <div class="col-lg-12">
+                <div class="ibox-content" style="padding-left: 0px;">
+                    <div class="row">
+                        <div>
+                            <span class="pull-right text-right">
+                                @*controles para agregar, entre otros*@
+                                <button type="button" id="btnMensaje" class="fa fa-plus-circle btn btn-primary btn-lg" onclick="newModal();" data-toggle="modal" data-target="#myModal" />
+                                <button type="button" id="updateModal" onclick="updateModal();" data-toggle="modal" style="display:none;" data-target="#myModal"></button>
+
+                            </span>
+                        </div>
+                        <div class="m-t-sm">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    @GridUsuarios()
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@*Empieza el modal*@
+<div class="modal inmodal" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content animated bounceInRight">
+            <div class="panel-heading">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Cerrar</span>
+                </button>
+                <h3 class="modal-title">Usuario</h3>
+                <small class="font-bold">Administración de usuarios</small>
+            </div>
+            <div class="modal-body">
+                <div class="panel-body">
+                    <p>
+                        <div class="col-lg-12" id="formularioPerfil">
+                            <div class="ibox-title">
+                                <h5><label id="TemaModal"></label></h5>
+                            </div>
+                            <div class="ibox-content">
+                                <form class="form-horizontal">
+                                    <center>
+                                        <div class="form-group">
+                                            <div class="col-lg-4">
+                                                <label class="control-label">Usuario:</label>
+                                            </div>
+                                            <div class="col-lg-8">
+                                                <input type="text" id="txtUsuario" disabled="" class="txtTab k-textbox marginFivePx">
+
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <div class="col-lg-4">
+                                                <label class="control-label">Nombre:</label>
+                                            </div>
+                                            <div class="col-lg-8">
+                                                <input type="text" id="txtNombre" class="txtTab k-textbox marginFivePx">
+
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <div class="col-lg-4">
+                                                <label class="control-label">Apellido:</label>
+                                            </div>
+                                            <div class="col-lg-8">
+                                                <input type="text" id="txtApellido" class="txtTab k-textbox marginFivePx">
+
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <div class="col-lg-4">
+                                                <label class="control-label">Contraseña:</label>
+                                            </div>
+                                            <div class="col-lg-8">
+                                                <input type="password" id="txtContrasenia" disabled value="123456" class="txtTab k-textbox marginFivePx">
+                                                <input type="checkbox" id="chkCambiarContra" value="false" onclick="chkCambiarContra_onclick();" />
+                    <p id="lblCambiarC">Cambiar</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-lg-4">
+                    <label class="control-label">Email:</label>
+                </div>
+                <div class="col-lg-8">
+                    <input type="text" id="txtEmail" class="txtTab k-textbox marginFivePx">
+
+                </div>
+            </div>
+
+            <div class="form-group" id="">
+                <div class="col-lg-4">
+                    <label class="control-label">Perfil:</label>
+                </div>
+                <div class="col-lg-8">
+                    @ProfileList()
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-lg-4">
+                    <label class="control-label">Estado:</label>
+                </div>
+                <div class="col-lg-8">
+                    @ActivoList()
+
+                </div>
+            </div>
+            <div class="form-group" id="divgaslist" style="display:none">
+                <div class="col-lg-4">
+                    <label class="control-label">Gasolinera:</label>
+                </div>
+                <div class="col-lg-8">
+                    @GasolineraList()
+                </div>
+            </div>
+            </center>
+            </form>
+        </div>
+    </div>
+
+    </p>
+</div>
+            </div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-white" data-dismiss="modal">Cerrar</button>
+    <button type="button" class="btn btn-primary" onclick="btn_Guardar_Onclick();">Guardar</button>
+</div>
+        </div>
+    </div>
+</div>
+@*Termina el modal*@
+
+
+@helper GridUsuarios()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.Usuario>()
+        .Name("GridUsuarios")
+        .Events(evt => evt.Change("GridUsuario_Change"))
+        .AutoBind(true)//banderaActivo	activo	gasolineraid
+            .Columns(c =>
+            {
+                c.Bound(col => col.userid).Visible(false);
+                c.Bound(col => col.usuario).Title("Usuario");
+                c.Bound(col => col.nombre).Title("Nombre");
+                c.Bound(col => col.apellido).Title("Apellido");
+                c.Bound(col => col.usertypeid).Visible(false);
+                c.Bound(col => col.tipousuario).Title("Tipo");
+                c.Bound(col => col.activo).Title("Estado");
+                c.Bound(col => col.activoid).Visible(false);
+                c.Bound(col => col.email).Title("Email");
+                c.Bound(col => col.gasolineraID).Visible(false);
+            })
+        .Mobile(MobileMode.Auto)
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single).Type(GridSelectionType.Row))
+        .Resizable(resize => resize.Columns(true))
+        .Reorderable(a => a.Columns(true))
+        .ColumnMenu()
+        .Scrollable(s => s.Enabled(true))
+        .Sortable()
+        .Filterable(f => f
+            .Mode(GridFilterMode.Row)
+            .Operators(ops => ops.
+                ForString(str => str
+                    .Clear()
+                    .Contains("Contiene")
+                    .IsEqualTo("Es igual a")
+                )
+            )
+        )
+
+        .Excel(excel => excel
+        .FileName("RPTUsuarios").AllPages(true)
+        )
+        .ToolBar(tb => tb.Excel().Text("Exportar a Excel"))
+        .Navigatable()
+        .Scrollable()
+        .HtmlAttributes(new { style = "height:100%; " })
+
+        .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+                .Read(r => r.Action("GridUsuarios", "Usuario"))
+        )
+
+    )
+}
+
+
+
+@helper ActivoList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("activoList")
+        .DataTextField("Text")
+        .DataValueField("Value")
+
+        .BindTo(new List<SelectListItem>() {
+            new SelectListItem() {
+            Text = "Activo",
+            Value = "1"
+            },
+            new SelectListItem() {
+            Text = "Inactivo",
+            Value = "0"
+            },
+
+        })
+
+    )
+}
+
+@helper ProfileList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("ProfileList")
+        .DataTextField("tipo")
+        .DataValueField("usertypeid")
+        .Events(e =>
+        {
+            e.Change("ProfileList_onChange");
+        })
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ComboPerfil", "Usuario");
+        })))
+    )
+}
+
+@helper GasolineraList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("GasolineraList")
+        .DataTextField("gasolinera")
+        .DataValueField("gasolineraid")
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ComboGasolinera", "Usuario");
+        })))
+    )
+}
+
+
+
+

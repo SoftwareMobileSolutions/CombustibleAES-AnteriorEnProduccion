@@ -1,0 +1,450 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Reportes Combustible > Vales Actualizados";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    // 0 = empresa, 1 = no. vale, 2 = fechaGInicio, 3 = fechaGFin, 4 = # equipo, 5 = placa, 6 = fechaAInicio, 7 = fechaAFin, 8 = usuario
+    var f = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    data = [];
+    var _filtro = 1;
+
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    function GenerarReporte() {
+        var datosValidados = false;
+        var filtroId = $("#filtro").data("kendoDropDownList").value();
+        var _numeroVale = $("#integerInput").data("kendoNumericTextBox").value();
+        var _numeroEquipo = $("#txtNumeroEquipo").val();
+        var _placa = $("#txtPlaca").val();
+        var _fechaI = $("#fecha_inicio").data("kendoDateTimePicker").value();
+        var _fechaF = $("#fecha_fin").data("kendoDateTimePicker").value();
+        var _usuario = $("#UsuariosList").data("kendoDropDownList").value();
+
+        switch (filtroId) {
+            case "1": //Número de vale
+                if (_numeroVale != null) {
+                    if (_numeroVale > 0) {
+                        datosValidados = true;
+                    }
+                    else GenerarMensaje("Aviso", "Por favor ingrese el número de vale debe ser mayor a 0.", 3);
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de vale.", 3);
+                break;
+
+            case "2": //Número de equipo
+                if (_numeroEquipo != "") {
+                    datosValidados = true;
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de equipo.", 3);
+                break;
+
+            case "3": //Placa
+                if (_placa != "") {
+                    datosValidados = true;
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de placa.", 3);
+                break;
+
+            case "4": case "5": //Fecha de generación / Fecha de actualización
+                if (_fechaI != null) {
+                    if (_fechaF != null) {
+                        _fechaI = moment(_fechaI);
+                        _fechaF = moment(_fechaI);
+                        if (_fechaF.isAfter(_fechaI) || _fechaI.isSame(_fechaF)) {
+                            datosValidados = true;
+                        }
+                        else GenerarMensaje("Aviso", "La fecha fin debe ser después de la fecha de inicio.", 3);
+                    }
+                    else GenerarMensaje("Aviso", "Por favor ingrese la fecha fin.", 3);
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese la fecha de inicio.", 3);
+                break;
+
+            case "6": //Usuario
+                datosValidados = true;
+                break;
+        }
+
+        if (datosValidados) {
+            $("#GridValesCF").data("kendoGrid").dataSource.read();
+        }
+    }
+
+    function GridData() {
+        var __idVale = $("#integerInput").data("kendoNumericTextBox")._text.val();
+        __idVale = __idVale.split(",");
+        //console.log("Split: " + __idVale);
+        var _idVale = "";
+        for (i = 0; i < __idVale.length; i++) {
+            _idVale += __idVale[i];
+        }
+        //console.log("idVale: " + _idVale);
+        var _idUsuario = $("#UsuariosList").data("kendoDropDownList").value();
+        _idVale = _idVale == null ? 0 : parseInt(_idVale);
+        _idUsuario = _idUsuario == "" ? 0 : parseInt(_idUsuario);
+
+        return {
+            idVale: _idVale,
+            numEquipo: $("#txtNumeroEquipo").val(),
+            placa: $("#txtPlaca").val(),
+            fechaInicio: moment($("#fecha_inicio").data("kendoDateTimePicker").value()).format("YYYYMMDD HH:mm:ss"),
+            fechaFin: moment($("#fecha_fin").data("kendoDateTimePicker").value()).format("YYYYMMDD HH:mm:ss"),
+            idUsuario: _idUsuario,
+            filtro: _filtro
+        }
+    }
+
+    function GridValesCF_Change(e) {
+        //console.log(e);
+        var rows = e.sender.select();
+        data = [];
+        var g = $("#GridValesCF").data("kendoGrid");
+        $.each($("#GridValesCF tbody tr"), function (i, e) {
+            $("tr[data-uid=" + $(e)[0].dataset.uid + "] td:first-child input").prop("checked", false);
+        });
+        rows.each(function (e, i) {
+            data.push(g.dataItem(this).NumeroVale);
+            //console.log($(this)[0].dataset.uid);
+            //console.log($(this)[]);
+            $("tr[data-uid=" + $(this)[0].dataset.uid + "] td:first-child input").prop("checked", true);
+        });
+        var ca = $("#checkAll");
+        if (g.select().length == g.dataSource.data().length) ca.prop("checked", true);
+        else ca.prop("checked", false);
+    }
+
+    function GridValesCF_DataBound(e) {
+        var cantRegistros = $("#GridValesCF").data("kendoGrid").dataSource.data().length;
+        if (cantRegistros > 0) {
+            $("#GridValesCF").data("kendoGrid").clearSelection();
+            LimpiarControlesCF();
+            $("#ControlesCF").show();
+        }
+        else {
+            $("#ControlesCF").hide();
+        }
+
+        $("#GridValesCF tbody tr input").click(function () {
+            checkRow($(this));
+        });
+    }
+
+    function checkRow(e) {
+        if (e.prop("checked")) {
+            e.parent().parent().parent().addClass("k-alt k-state-selected");
+        }
+        else {
+            e.parent().parent().parent().removeClass("k-alt k-state-selected");
+        }
+        var GData = new Object();
+        GData.sender = $("#GridValesCF").data("kendoGrid");
+        GridValesCF_Change(GData);
+    }
+
+    function ActualizarCF() {
+        var _fechaCF = $("#fechasimple5").data("kendoDatePicker").value();
+        var _CF = $("#txtCreditoFiscal").val();
+
+        if (data.length > 0) {
+            if (_fechaCF != null) {
+                if (_CF != "") {
+                    $.post(
+                        "../ReporteValesActualizados/ActualizarCreditoFiscal",
+                        { idVales: data, CF: $("#txtCreditoFiscal").val(), fechaCF: moment($("#fechasimple5").data("kendoDatePicker").value()).format("YYYYMMDD") }
+                        ,
+                        function (e) {
+                            if (e.codigo == 1) {
+                                GenerarMensaje("Aviso", e.mensaje, 2);
+                                $("#GridValesCF").data("kendoGrid").dataSource.read();
+                            }
+                            else GenerarMensaje("Aviso", "Error al actualizar la factura. " + e.mensaje, 4);
+                        }
+                    );
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de crédito fiscal.", 3);
+            }
+            else GenerarMensaje("Aviso", "Por favor ingrese la fecha de ingreso de crédito fiscal.", 3);
+        }
+        else GenerarMensaje("Aviso", "Para actualizar el número de factura elija al menos un vale de la tabla de registros.", 3);
+    }
+
+    function LimpiarControlesCF() {
+        $("#checkAll").prop("checked", false);
+        $("#fechasimple5").data("kendoDatePicker").value("");
+        $("#txtCreditoFiscal").val("");
+    }
+
+    //Se encarga de esconder cada uno de los controles de filtrado
+    function esconderControles() {
+        $("#controlesFecha").hide();
+        $("#controlesNumeroVale").hide();
+        $("#controlesCodigoFiscal").hide();
+        $("#controlesPlaca").hide();
+        $("#controlesNumeroEquipo").hide();
+        $("#controlesUsuario").hide();
+        $("#integerInput").data("kendoNumericTextBox")._text.val(0);
+        $("#integerInput").data("kendoNumericTextBox").element.val(0);
+        $("#txtPlaca").val("");
+        $("#txtNumeroVale").val("");
+        $("#txtNumeroEquipo").val("");
+        $("#UsuariosList").data("kendoDropDownList").select(0);
+    }
+
+    //Se encarga de mostrar el o los controles adecuados según el valor seleccionado del DropDownList "filtro"
+    function filtro_OnChange() {
+        var valor = $("#filtro").data("kendoDropDownList").value();
+        esconderControles();
+        switch (valor) {
+
+            case "1"://"Número de vale"
+                $("#controlesNumeroVale").show();
+                $("#integerInput").data("kendoNumericTextBox").focus();
+                _filtro = 1;
+                break;
+
+            case "2"://"Número de equipo"
+                $("#controlesNumeroEquipo").show();
+                $("#txtNumeroEquipo").focus();
+                _filtro = 2;
+                break;
+
+            case "3"://"Placa"
+                $("#controlesPlaca").show();
+                $("#txtPlaca").focus();
+                _filtro = 3;
+                break;
+
+            case "4"://"Fecha de generación"
+                $("#controlesFecha").show();
+                _filtro = 4;
+                break;
+
+            case "5"://"Fecha de actualización"
+                $("#controlesFecha").show();
+                _filtro = 5;
+                break;
+
+            case "6"://"Usuario"
+                $("#controlesUsuario").show();
+                _filtro = 6;
+                break;
+        }
+    }
+
+    function filtro_DataBound() {
+        filtro_OnChange();
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+
+        $("#integerInput, #txtNumeroEquipo, #txtPlaca").keypress(function (e) {
+            if (e.keyCode == 13) GenerarReporte();
+        });
+
+        $("#txtCreditoFiscal").keypress(function (e) {
+            if (e.keyCode == 13) ActualizarCF();
+        });
+
+        $("#checkAll").click(function () {
+            var o = $("#checkAll");
+            var g = $("#GridValesCF").data("kendoGrid");
+            if (o.prop("checked")) g.select("tr");
+            else g.clearSelection();
+        });
+
+    });
+</script>
+<style>
+    tr, td {
+        border: 1px solid white;
+        padding: 5px;
+        text-align: left;
+    }
+
+    .disable-select {
+        user-select: none; /* supported by Chrome and Opera */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+    }
+</style>
+<div class="page-wrapper">
+    <div class="panel panel-default" style="height:100%;">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Reporte Vales Actualizados
+            </h3>
+            <small>Desde éste módulo podrá agregar el número de crédito fiscal a aquellos vales que no lo tengan.</small>
+        </div>
+        <div class="panel-body" style="height: 100%;">
+            <div class="col-lg-12" style="height: 100%;">
+                <div class="row" style="height: 100%; margin-bottom: 5px; margin-top: -10px;">
+                    <span class="pull-right text-right">
+                        <label>Filtro de datos por:&nbsp;</label>@DropDownOpciones()
+                    </span>
+                </div>
+                <div class="row" style="height: 100%;">
+                    <span id="filtrosControles" class="pull-right text-right">
+                        <div id="controlesNumeroVale" style="margin-bottom: 5px;" hidden>
+                            <label>Número de vale:</label>&nbsp;@RenderPage("~/Views/PartialViews/Template/Integer.cshtml")
+                        </div>
+                        <div id="controlesNumeroEquipo" style="margin-bottom: 5px;" hidden>
+                            <label>Número de equipo:</label>&nbsp;<input type="text" id="txtNumeroEquipo" class="txtTab k-textbox marginFivePx" />
+                        </div>
+                        <div id="controlesPlaca" style="margin-bottom: 5px;" hidden>
+                            <label>Placa:</label>&nbsp;<input type="text" id="txtPlaca" class="txtTab k-textbox marginFivePx" />
+                        </div>
+                        <div id="controlesFecha" style="margin-bottom: 5px;" hidden>
+                            <label>Fecha Inicio:</label>@RenderPage("~/Views/PartialViews/Template/fechainicio.cshtml")
+                            <label>Fecha Fin:</label>@RenderPage("~/Views/PartialViews/Template/fechafin.cshtml")
+                        </div>
+                        <div id="controlesUsuario" style="margin-bottom: 5px;" hidden>
+                            <label>Usuario:</label>&nbsp;@ComboUsuarios()
+                        </div>
+                        <button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="GenerarReporte()">Generar</button>
+                    </span>
+                    <div class="m-t-sm" style="height: 100%">
+                        <div class="row" style="height: 100%;">
+                            <div class="col-md-12" style="height: 100%; margin-top: 10px;">
+                                <table id="ControlesCF" hidden>
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" id="checkAll">
+                                            <label for="checkAll" class="disable-select">Seleccionar Todos</label>
+                                            &nbsp;&nbsp;&nbsp;
+                                            <label>Fecha Crédito Fiscal:</label>&nbsp;@RenderPage("~/Views/PartialViews/Template/fechasimple5.cshtml")
+                                            &nbsp;&nbsp;&nbsp;
+                                        </td>
+                                        <td>
+                                            <label>Número Crédito Fiscal:</label>
+                                            <input type="text" id="txtCreditoFiscal" class="k-textbox marginFivePx" />
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="ActualizarCF()">Actualizar Número Factura</button>
+                                        </td>
+                                    </tr>
+                                </table>
+                                @GridValesCF()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper GridValesCF()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.ReporteValesActualizados>()
+        .Name("GridValesCF")
+        .AutoBind(false)
+        .Columns(col =>
+        {
+            col.Bound(c => c.NumeroVale).ClientTemplate("<center><input type='checkbox'></center>").Title("Seleccionar").Width(100).Filterable(false);
+            col.Bound(c => c.NumeroVale).Title("No. Vale").Width(200);
+            col.Bound(c => c.SubFlota).Title("Subflota").Width(200);
+            col.Bound(c => c.Alias).Title("Alias").Width(200);
+            col.Bound(c => c.Placa).Title("Placa").Width(200);
+            col.Bound(c => c.Empresa).Title("Empresa").Width(200);
+            col.Bound(c => c.Usuario).Title("Usuario").Width(200);
+            col.Bound(c => c.FechaGeneracion).Title("Fecha Generación").Width(200);
+            col.Bound(c => c.FechaActualizacion).Title("Fecha Actualización").Width(200);
+            col.Bound(c => c.NoEmpleado).Title("No. Empleado").Width(200);
+            col.Bound(c => c.TipoCombustible).Title("Tipo Combustible").Width(200);
+            col.Bound(c => c.CentroCosto).Title("Centro Costo").Width(200);
+            col.Bound(c => c.Odometro).Title("Odometro").Width(200);
+            col.Bound(c => c.CantidadGalones).Title("Cantidad Galones").Width(200);
+            col.Bound(c => c.TotalPrecio).Title("Total Precio").Width(200);
+        })
+        .Scrollable()
+        .Filterable(f => f
+            .Mode(GridFilterMode.Row)
+            .Operators(ops => ops.
+                ForString(str => str
+                    .Clear()
+                    .Contains("Contiene")
+                    .IsEqualTo("Es igual a")
+                )
+            )
+        )
+        .Selectable(s => s.Mode(GridSelectionMode.Multiple))
+        .PersistSelection(true)
+        .Mobile(MobileMode.Auto)
+        .Sortable()
+        .Pageable(x =>
+        {
+            x.Enabled(true);
+            x.PreviousNext(true);
+            x.PageSizes(true);
+            x.Info(true);
+            x.Input(true);
+            x.Numeric(false);
+            x.PageSizes(new List<object> { 20, 30, 40, 50, 100 }).Refresh(false);
+
+        })
+        .NoRecords(nr => nr.Template("<h1 style='   font-color: gray;'>No hay registros para mostrar.</h1>"))
+        .Scrollable()
+        .DataSource(ds => ds.Ajax().PageSize(100).Read(r => r.Action("ObtenerValesSinCF", "ReporteValesActualizados").Data("GridData")))
+        .Events(e => e.DataBound("GridValesCF_DataBound").Change("GridValesCF_Change"))
+    )
+}
+
+@helper ComboUsuarios()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("UsuariosList")
+        .DataValueField("IdUsuario")
+        .DataTextField("Usuario")
+        .DataSource(ds => ds.Read(r => r.Action("ObtenerUsuarios", "Global")))
+        //.Events(e => e.Change("UsuariosList_Change"))
+    )
+}
+
+@helper DropDownOpciones()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("filtro")
+        .DataValueField("IdFiltro")
+        .DataTextField("Nombre")
+        .DataSource(ds => ds.Read(r => r.Action("ObtenerFiltros", "ReporteValesActualizados")))
+        .HtmlAttributes(new { style = "width: 165px;" })
+        .Events(e => e.Change("filtro_OnChange").DataBound("filtro_DataBound"))
+    )
+}

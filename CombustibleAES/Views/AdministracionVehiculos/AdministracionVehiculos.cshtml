@@ -1,0 +1,377 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Configuración > Administración Vehículos";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+
+        var accion = 0;//0=Nuevo;1=Modificar
+        var idTemp = 0; //userid temporal
+
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    function LimpiarCampos() {
+        var el = $('#EmpresasList').data("kendoDropDownList");
+        el.value(el.dataSource.data()[0].Empresaid);
+        $('#txtNumEquipo').val("");
+        $('#txtPlaca').val("");
+        $('#txtMarca').val("");
+        $('#txtModelo').val("");
+        $('#txtYearMade').val("");
+        $('#txtKmxGalon').val("");
+    }
+
+    function updateModal() {
+        accion = 1;
+        $("#titulo").html("Modificar Datos de Vehículo");
+        $("#subtitulo").html("Modifique los campos que considere necesario.");
+        EstadosVehiculos_DataBound();
+        $("#ControlEstadoVehiculo").show();
+    }
+
+    function newModal() {
+        accion = 0;
+        $("#titulo").html("Agregar Nuevo Vehículo");
+        $("#subtitulo").html("Ingrese la información solicitada.");
+        LimpiarCampos();
+        $("#ControlEstadoVehiculo").hide();
+    }
+
+    function GridVehiculos_Change() {
+        accion = 1;
+        LimpiarCampos();
+        var data = this.dataItem(this.select());
+
+        if (Object.is(data, null) === false) {
+            idTemp = data.Mobileid;
+            $('#EmpresasList').data("kendoDropDownList").value(data.Empresaid);
+            $('#txtNumEquipo').val(data.Equipo);
+            $('#txtPlaca').val(data.Placa);
+            $('#txtMarca').val(data.Marca);
+            $('#txtModelo').val(data.Modelo);
+            $('#txtYearMade').val(data.Year);
+            $('#txtKmxGalon').val(data.KmxGalon1);
+            $("#updateModal").click();
+            setTimeout(function () {
+                $("#EstadosVehiculos").data("kendoDropDownList").value(data.Status);
+            });
+        }
+    }
+
+    function EstadosVehiculos_DataBound() {
+        var ev = $("#EstadosVehiculos").data("kendoDropDownList");
+        ev.value(ev.dataSource.data()[0].IdEstado);
+    }
+
+    function btn_Guardar_Onclick() {
+        var _empresaid = $("#EmpresasList").data("kendoDropDownList").value();
+        var _numEquipo = $('#txtNumEquipo').val();
+        var _placa = $('#txtPlaca').val();
+        var _marca = $('#txtMarca').val();
+        var _modelo = $('#txtModelo').val();
+        var _year = $('#txtYearMade').val();
+        var _kmxGalon = $('#txtKmxGalon').val();
+
+        if (_empresaid > 0) {
+            if (_numEquipo != "") {
+                if (_placa != "") {
+                    if (_marca != "") {
+                        if (_modelo != "") {
+                            if (_year != "") {
+                                if (_year > 0) {
+                                    if (_kmxGalon != "") {
+                                        if (_kmxGalon > 0) {
+                                            if (accion == 0) {
+                                                // Nuevo vehículo
+                                                $.post(
+                                                    "../AdministracionVehiculos/InsertarMobile",
+                                                    {
+                                                        empresaid: parseInt(_empresaid), alias: _numEquipo, placa: _placa, make: _marca,
+                                                        model: _modelo, yearmade: parseInt(_year), kmxGalon: _kmxGalon
+                                                    },
+                                                    function (r) {
+                                                        $("#myModal").toggle();
+                                                        GenerarMensaje("Aviso", r.mensaje, r.nivel);
+                                                    }
+                                                );
+
+                                            } else {
+                                                // Modificar datos vehículo
+                                                $.post(
+                                                    "../AdministracionVehiculos/ActualizarMobile",
+                                                    {
+                                                        //int mobileid, int empresaid, string alias, string placa, string make, string model, int yearmade, float kmxGalon, int status
+                                                        mobileid: parseInt(idTemp), empresaid: _empresaid, alias: _numEquipo, placa: _placa, make: _marca,
+                                                        model: _modelo, yearmade: parseInt(_year), kmxGalon: _kmxGalon, status: parseInt($("#EstadosVehiculos").data("kendoDropDownList").value())
+                                                    },
+                                                    function (r) {
+                                                        $("#myModal").toggle();
+                                                        GenerarMensaje("Aviso", r.mensaje, r.nivel);
+                                                    }
+                                                );
+                                            }
+                                            $("#GridVehiculos").data("kendoGrid").dataSource.read();
+                                        }
+                                        else GenerarMensaje("Aviso", "Por favor ingrese la cantidad de kilómetros por galón.");
+                                    }
+                                    else GenerarMensaje("Aviso", "Por favor ingrese el número de kilómetros por galón.");
+                                }
+                                else GenerarMensaje("Aviso", "Por favor ingrese un año válido", 3);
+                            }
+                            else GenerarMensaje("Aviso", "Por favor ingrese año del vehículo.", 3);
+                        }
+                        else GenerarMensaje("Aviso", "Por favor ingrese el modelo del vehículo.", 3);
+                    }
+                    else GenerarMensaje("Aviso", "Por favor ingrese la marca del vehículo.", 3);
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de placa del vehículo.", 3);
+            }
+            else GenerarMensaje("Aviso", "Por favor ingrese el número del vehículo.", 3);
+        }
+        else GenerarMensaje("Aviso", "Por favor seleccione la empresa a la que pertenece el vehículo.", 3);
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+    });
+
+</script>
+<div class="page-wrapper">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Administrar Vehículos
+            </h3>
+            <small>Permite administrar la información de los diferentes vehículos</small>
+        </div>
+        <div class="panel-body">
+            <div class="col-lg-12">
+                <div class="ibox-content" style="padding-left: 0px;">
+                    <div class="row">
+                        <div>
+                            <span class="pull-right text-right">
+                                <button type="button" id="btnMensaje" class="fa fa-plus-circle btn btn-primary btn-lg" onclick="newModal();" data-toggle="modal" data-target="#myModal" />
+                                <button type="button" id="updateModal" onclick="updateModal();" data-toggle="modal" style="display:none;" data-target="#myModal"></button>
+                            </span>
+                        </div>
+                        <div class="m-t-sm">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    @GridVehiculos()
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@*Empieza el modal*@
+<div class="modal inmodal" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content animated bounceInRight">
+            <div class="panel-heading">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Cerrar</span>
+                </button>
+                <h3 id="titulo" class="modal-title">Modificar Datos de Vehículo</h3>
+                <small id="subtitulo" class="font-bold">Modifique los campos que considere necesarios.</small>
+            </div>
+            <div class="modal-body">
+                <div class="panel-body">
+                    <div class="ibox-content">
+                        <form class="form-horizontal">
+                            <center>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Empresa:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        @ComboEmpresas()
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Número de equipo:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtNumEquipo" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Placa:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtPlaca" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Marca:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtMarca" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Modelo:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtModelo" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Año:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="number" id="txtYearMade" class="txtTab k-textbox marginFivePx" step="1">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Kilómetros por Galón:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="number" id="txtKmxGalon" class="txtTab k-textbox marginFivePx" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="form-group" id="ControlEstadoVehiculo">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Estado:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        @EstadosVehiculos()
+                                    </div>
+                                </div>
+                            </center>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-white" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="btn_Guardar_Onclick()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+@*Termina el modal*@
+
+@helper GridVehiculos()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.AdministracionVehiculos>()
+        .Name("GridVehiculos")
+        .Events(evt => evt.Change("GridVehiculos_Change"))
+        .AutoBind(true)//banderaActivo	activo	gasolineraid
+            .Columns(c =>
+            {
+                c.Bound(col => col.Mobileid).Visible(false);
+                c.Bound(col => col.Empresa).Title("Empresa");
+                c.Bound(col => col.Equipo).Title("Equipo");
+                c.Bound(col => col.Placa).Title("Placa");
+                c.Bound(col => col.Marca).Title("Marca");
+                c.Bound(col => col.Modelo).Title("Modelo");
+                c.Bound(col => col.Year).Title("Año");
+                c.Bound(col => col.KmxGalon1).Title("KmxGalon");
+            })
+        .Mobile(MobileMode.Auto)
+            .Selectable(selectable => selectable.Mode(GridSelectionMode.Single).Type(GridSelectionType.Row))
+            .Resizable(resize => resize.Columns(true))
+            //.Reorderable(a => a.Columns(true))
+            //.ColumnMenu()
+            .Scrollable(s => s.Enabled(true))
+            .Sortable()
+            .Filterable(f => f
+                .Mode(GridFilterMode.Row)
+                .Operators(ops => ops.
+                    ForString(str => str
+                        .Clear()
+                        .Contains("Contiene")
+                        .IsEqualTo("Es igual a")
+                    )
+                )
+            )
+            .Excel(excel => excel
+            .FileName("RPTCServicios").AllPages(true)
+            )
+            .ToolBar(tb => tb.Excel().Text("Exportar a Excel"))
+            .Navigatable()
+            .Scrollable()
+            .HtmlAttributes(new { style = "height:100%; " })
+            .Pageable(x =>
+            {
+                x.Enabled(true);
+                x.PreviousNext(true);
+                x.PageSizes(true);
+                x.Info(true);
+                x.Input(true);
+                x.Numeric(false);
+                x.PageSizes(new List<object> { 20, 30, 40, 50, 100 }).Refresh(false);
+
+            })
+
+            .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+                            .Read(r => r.Action("ObtenerVehiculos", "AdministracionVehiculos"))
+        )
+
+    )
+}
+
+@helper ComboEmpresas()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("EmpresasList")
+        .DataValueField("empresaid")
+        .DataTextField("empresa")
+        .DataSource(ds => ds.Read(r => r.Action("ComboEmpresas", "Global")))
+    )
+}
+
+@helper EstadosVehiculos()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("EstadosVehiculos")
+        .DataValueField("IdEstado")
+        .DataTextField("Estado")
+        .DataSource(ds => ds.Read(r => r.Action("ObtenerEstadosVehiculos", "AdministracionVehiculos")))
+        .Events(e => e.DataBound("EstadosVehiculos_DataBound"))
+    )
+}

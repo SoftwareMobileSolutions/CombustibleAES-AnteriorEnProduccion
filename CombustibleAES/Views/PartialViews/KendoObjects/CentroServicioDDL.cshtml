@@ -1,0 +1,18 @@
+﻿
+@(Html.Kendo().DropDownList()
+    .Name("DDLCentroServicio")
+    .DataTextField("texto")
+    .DataValueField("valor")
+        //.Events(e => e.Change("DDLCentroServicio_Change").DataBound("DDLCentroServicio_DataBound"))
+    .HtmlAttributes(new { style = "width:250px;" })
+    .Filter("contains")
+    .DataSource(source => source
+    .ServerFiltering(false)
+    .Custom()
+    .AutoSync(true)
+    .Transport(transport => transport
+    .Read(read =>
+    {
+        read.Action("DDLCentroServicio", "Global");
+    })))
+)

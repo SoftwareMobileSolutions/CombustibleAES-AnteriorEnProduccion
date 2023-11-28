@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <CodeSnippet Format="1.0.0">
+    <Header>
+      <Title>Add MobileDDL</Title>
+      <Author>Franklin Alvarado</Author>
+      <Description>Agrega DDL de Mobile basados en Subfleet</Description>
+      <Shortcut>addMobileDDL</Shortcut>
+    </Header>
+    <Snippet>
+      <Code Language="HTML">
+        <![CDATA[
+        <script type="text/javascript">
+            var subfleet=-1;
+            function DDLMobile_Change() { }
+            function DDLMobile_DataBound() { }
+            function GetSubfleetID() {
+                return { SubFleetID: subfleet }
+            };
+        </script>
+        @RenderPage("~/Views/PartialViews/kendoObjects/MobileDLL.cshtml")
+
+ ]]>
+      </Code>
+    </Snippet>
+  </CodeSnippet>
+</CodeSnippets>

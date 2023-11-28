@@ -1,0 +1,179 @@
+﻿@using CombustibleAES.Models;
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="content-language" content="es" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@ViewBag.Title</title>
+    <script src="~/Scripts/jquery-1.11.3.min.js"></script>
+    <script src="~/Scripts/jquery-ui-1.11.4.min.js"></script>
+    @*prueba css*@
+    <link href="~/Content/plantilla/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/Content/plantilla/font-awesome/css/font-awesome.css" rel="stylesheet" />
+    <link href="~/Content/plantilla/css/plugins/morris/morris-0.4.3.min.css" rel="stylesheet" />
+    <link href="~/Content/plantilla/css/animate.css" rel="stylesheet" />
+    <link href="~/Content/plantilla/css/style.css" rel="stylesheet" />
+    <!-- Mainly scripts -->
+    <script src="~/Content/plantilla/js/jquery-2.1.1.js"></script>
+    <script src="~/Scripts/sweetalert.min.js"></script>
+    <script src="~/Content/plantilla/js/bootstrap.min.js"></script>
+    <script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+    <script src="~/Content/plantilla/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+    <script src="~/Content/plantilla/js/plugins/metisMenu/jquery.metisMenu.js"></script>
+    <script src="~/Content/plantilla/js/plugins/flot/jquery.flot.js"></script>
+    <script src="~/Content/plantilla/js/plugins/flot/jquery.flot.tooltip.min.js"></script>
+    <script src="~/Content/plantilla/js/plugins/flot/jquery.flot.spline.js"></script>
+    <script src="~/Content/plantilla/js/plugins/flot/jquery.flot.resize.js"></script>
+    <script src="~/Content/plantilla/js/plugins/flot/jquery.flot.pie.js"></script>
+    <script src="~/Content/plantilla/js/plugins/flot/jquery.flot.symbol.js"></script>
+    <script src="~/Content/plantilla/js/plugins/flot/curvedLines.js"></script>
+    <script src="~/Content/plantilla/js/plugins/peity/jquery.peity.min.js"></script>
+    <script src="~/Content/plantilla/js/demo/peity-demo.js"></script>
+    <!-- Custom and plugin javascript -->
+    <script src="~/Content/plantilla/js/inspinia.js"></script>
+    <script src="~/Content/plantilla/js/plugins/pace/pace.min.js"></script>
+    <!-- jQuery UI -->
+    <script src="~/Content/plantilla/js/plugins/jquery-ui/jquery-ui.min.js"></script>
+    <script src="~/Content/plantilla/js/plugins/sparkline/jquery.sparkline.min.js"></script>
+    @*<script src="~/Content/plantilla/js/plugins/jvectormap/jquery-jvectormap-1.2.2.min.js"></script>
+        <script src="~/Content/plantilla/js/plugins/jvectormap/jquery-jvectormap-world-mill-en.js"></script><!-- Sparkline -->*@
+    @*finaliza prueba*@
+    <script src="~/Scripts/respond.js"></script>
+    <script src="~/Scripts/moment.min.js"></script>
+    <script src="~/Scripts/functions/custom.js"></script>
+    <script src="~/Scripts/modules/Home.js"></script>
+    @Scripts.Render("~/bundles/kendojs")
+    @Scripts.Render("~/bundles/moment")
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700&amp;subset=latin,cyrillic-ext" rel="stylesheet" type="text/css">
+    @{
+        var Menu = Session["PermisosUser"] as IList<Tree>;// Se llena en Util/Autentication
+        
+
+        LogIn usuario = this.Session["User"] as LogIn;
+        object user;
+        if (usuario != null)
+        {
+            user = new { username = usuario.usuario, usertyusertypeid = usuario.usertypeid, userid = usuario.userid };
+
+        }
+        else
+        {
+            user = new { userid = -1 };
+        }
+
+    }
+
+    <link href="@Url.Content("~/Content/kendo/2018.1.221/kendo.common.min.css")" rel="stylesheet" type="text/css" />
+    <link href="@Url.Content("~/Content/kendo/2018.1.221/kendo.default.min.css")" rel="stylesheet" type="text/css" />
+    <link href="@Url.Content("~/Content/kendo/2018.1.221/kendo.dataviz.default.min.css")" rel="stylesheet" type="text/css" />
+    <script src="@Url.Content("~/Scripts/kendo/2018.1.221/jszip.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/kendo/2018.1.221/kendo.aspnetmvc.min.js")"></script>
+    <script type="text/javascript">
+     var usuario = @this.Html.Raw(Json.Encode(user));
+    $(window).ready(function () {
+        var valor=innerHeight;
+        $('#page-wrapper').css("min-height", valor);
+      });
+    $(document).ready(function () {
+        $(window).resize(function () {
+           var valor=innerHeight;
+        $('#page-wrapper').css("min-height", valor);
+        });
+        $("#theNavbar").after("<img class='pull-right' src='" + (window.location.hostname == "localhost" ? ".." : "../../CombustibleAES") + "/Imagenes/logoAES2020.png' style='float: right; max-width: 180px; padding: 10px;' />");
+    });
+
+    </script>
+</head>
+<body>
+
+        <nav class="navbar-default navbar-static-side" role="navigation">
+            <div class="sidebar-collapse">
+                <ul class="nav" id="side-menu">
+                    <div class='dropdown profile-element' style='padding-left: 20px;'>
+                        <span>
+                            <img alt='image' class='img-circle' src='/Imagenes/Login/logo-Vales.png' />
+                        </span>
+                        <a data-toggle='dropdown' class='dropdown-toggle' href='#'>
+                            <span class='clear' style='padding-left: 10px;'>
+                                <span class='block m-t-xs'>
+                                    <strong class='font-bold'><span id='UserName'>@usuario.usuario</span></strong>
+                                </span> <span class='text-muted text-xs block' id='usertypeLogin'><b class='caret'></b></span>
+                            </span>
+                        </a>
+                        <ul class='dropdown-menu animated fadeInRight m-t-xs'>
+                            <li><a href="@Url.Action("LogOut", "Login")"><i class='fa fa-sign-out'></i>Salir</a></li>
+                        </ul>
+                    </div>
+                    @{
+                        IEnumerable<Tree> children;
+                        for (int i = 0, lvl0 = Menu.Where(x => x.Nivel == 0).Count(); i < lvl0; i++)
+                        {
+                            <text>
+                                <li>
+                                    <a href="#"><i class="@Menu[i].Icon"></i> <span class="nav-label">@Menu[i].Name</span> <span class="fa arrow"></span></a>
+                                    <ul class="nav nav-second-level">
+                            </text>
+                            children = Menu.Where(x => x.Parent == Menu[i].Cod);
+                            for (int j = 0, lvl1 = children.Count(); j < lvl1; j++)
+                            {
+                                string[] urlAction = children.ElementAt(j).Urlpage.Split('/');
+                                <text>
+                                    <li><a href="@Url.Action(urlAction[1], urlAction[0])"><i class="@children.ElementAt(j).Icon"></i>@children.ElementAt(j).Name</a></li>
+                                </text>
+                            }
+                                    @:</ul>
+                                @:</li>
+                        }
+                    }
+                    <li>
+                        <a href="#" id="manual"><i class="fa fa-file-pdf-o"></i> <span class="nav-label">Manual de Usuario</span> </a>
+                    </li>
+
+                </ul>
+            </div>
+        </nav>
+        <div id="page-wrapper" class="gray-bg">
+            <div class="row border-bottom">
+                <nav class="navbar navbar-static-top white-bg" role="navigation" style="margin-bottom: 0">
+                    <div class="navbar-header" id="theNavbar">
+                        <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
+                    </div>
+                </nav>
+            </div>
+            <div class="wrapper wrapper-content">
+                <div class="row" id="VC_content_iframe">
+                    @RenderBody()
+                </div>
+              
+            </div>
+
+        </div>
+    <script>
+        $(window).ready(function () {
+            var l = window.location.pathname.split("/");
+
+            if (window.location.hostname != "localhost") {
+                var route = window.location.pathname.split("/")[1] + "/Imagenes/Login/logo-Vales.png";
+                $(".img-circle").attr("src", "../../" + route);
+            }
+
+            $("#manual").click(function (e) {
+                e.preventDefault();
+                var url = "ManualUsuario/ManualUsuario";
+                if (window.location.hostname == "localhost") { //Localhost
+                    url = "../" + url;
+                }
+                else { //Dominio bluefenyx
+                    url = "/" + l[1] + "/" + url;
+                }
+                
+                window.open(url, "_blank");
+            });
+        });
+    </script>
+</body>
+</html>

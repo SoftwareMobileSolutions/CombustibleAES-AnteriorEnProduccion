@@ -1,0 +1,83 @@
+﻿@*
+<script type="text/javascript">
+//Colocar mascara a los datatimepicker para cuando se vaya digitando no coloquen mas o menos valores de los que correpsonden
+function MaskDTFin() {
+$("#FechaMasivo").kendoMaskedTextBox({
+mask: "0000/00/00"
+}).removeClass("k-textbox");
+}
+
+//Cuando sale del foco del datetimepicker ejecutar lo siguiente
+var DateTimeNow, fechafin;
+$(document).on("focusout", "#FechaMasivo", function () {
+ValFechaFin();
+});
+//Validar fecha de Fin
+function ValFechaFin() {
+fechafin = GetDatePickerVal("FechaMasivo");
+DateTimeNow = moment().format('YYYY/MM/DD');
+(!(fechafin instanceof Date)) && ($("#FechaMasivo").val(DateTimeNow), $("#" + "FechaMasivo").data("kendoDatePicker").value(DateTimeToday) , fechafin = GetDateTimeVal("FechaMasivo"));  //Si la fehca no es valida que la resetee hasta a fecha actual y hora actual
+}
+
+$(window).load(function () { MaskDTFin(); fechafin = GetDateTimeVal("FechaMasivo"); });
+</script>
+@(Html.Kendo().DatePicker()
+.Name("FechaMasivo")
+.Format("yyyy/MM/dd")
+.Value(DateTime.Now)
+.Max(DateTime.Now)
+.Min("1900/01/01")
+.Culture("es-MX")
+.HtmlAttributes(new { style = "width:100px", placeholder = "____/__/__" })
+)
+*@
+<script type="text/javascript">
+    //Colocar mascara a los datatimepicker para cuando se vaya digitando no coloquen mas o menos valores de los que correpsonden
+    function MaskDTInicio() {
+        $("#FechaMasivo").kendoMaskedTextBox({
+                                                 mask: "0000/00/00 00:00:00"
+                                             }).removeClass("k-textbox");
+    }
+
+    //Cuando sale del foco del datetimepicker ejecutar lo siguiente
+    var DateTimeNow, fechainicio;
+    
+    $(document).on("focusout", "#FechaMasivo", function () {
+        ValFechaInicio();
+    });
+    
+    //Validar fecha de inicio
+    function ValFechaInicio() {
+        fechainicio = GetDateTimePickerVal("FechaMasivo");
+        DateTimeToday = moment().startOf('day').format('YYYY/MM/DD HH:mm:ss');
+        (!(fechainicio instanceof Date)) &&
+        ($("#FechaMasivo").val(DateTimeToday),
+        $("#FechaMasivo").data("kendoDateTimePicker").value(DateTimeToday),
+        fechainicio = GetDateTimePickerVal("FechaMasivo"));//Si la fecha no es valida que la resetee al dia inicio del dia de ahora
+    }
+    $(window).load(function () {
+        MaskDTInicio();
+        fechainicio = GetDateTimePickerVal("FechaMasivo");
+    });
+</script>
+@using CombustibleAES.Models;
+    
+@{
+    LogIn Usuario;
+    Usuario = this.Session["User"] as LogIn;
+    var user = new { timezone = -6 };
+
+    DateTime dtFH = DateTime.Now.AddHours(user.timezone);
+    DateTime dtFechaHoy = new DateTime(dtFH.Year, dtFH.Month, dtFH.Day, 0, 0, 0);
+}
+      
+@(Html.Kendo()
+      .DateTimePicker()
+      .Name("FechaMasivo")
+      .Format("yyyy/MM/dd HH:mm:ss")
+          .Value(dtFechaHoy)
+      .Max(DateTime.Now.AddHours(user.timezone))
+      .Min("2007/01/01 00:00:00")
+      .Culture("es-MX")
+      .HtmlAttributes(new { style = "width:180px", placeholder = "____/__/__ __:__:__" })
+)

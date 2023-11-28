@@ -1,0 +1,388 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Combustible > Liquidar Vale";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+
+    var ivaleid = 0;
+    var tt = 0;
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    function btn_Buscar_Onclick() {
+        numVale = $('#txtNumVale').val();
+        if (numVale != "") { //Se verifica que se haya ingresado el numero de un vale previamente.
+            if (numVale != ivaleid) {
+                $.post("../LiquidarVale/ObtenerValeLiqui", {
+                    valeid: numVale
+                },
+                    function (data) {
+                        var respuesta = data;
+                        if (respuesta.codigo <= 0) {
+                            GenerarMensaje("Aviso", respuesta.mensaje, 4);
+                        } else {
+                            LimpiarFormulario();
+                            ivaleid = respuesta.NumeroVale;
+                            $('#txtEmpresa').val(respuesta.Empresa);
+                            $('#txtAlias').val(respuesta.Alias);
+                            $('#txtPlaca').val(respuesta.Placa);
+                            $('#txtTipoCombustible').val(respuesta.TipoCombustible);
+                            $('#txtNoEmpleado').val(respuesta.NoEmpleado);
+                            $('#txtEmpleado').val(respuesta.NombreEmpleado);
+                        }
+                    });
+            }
+            else {
+                GenerarMensaje("Atención", "La información actual pertenece al vale No. " + ivaleid + ".", 1);
+            }
+        }
+        else { //No se ha ingresado el numero de vale.
+            GenerarMensaje("Aviso", "Primero ingrese el número de vale de combustible a buscar.", 3);
+        }
+    }
+
+    function btnActualizar_Onclick() {
+        if (ivaleid != 0) { //Se verifica que se haya buscado un vale previamente
+            _odometro = $('#txtOdometro').val();
+            _galones = parseFloat($('#txtCantidadG').val());
+            _precio = tt;
+            _estacionId = $('#EstacionServicioList').data("kendoDropDownList").value();
+            _precioGalon = parseFloat($('#txtPrecioUGal').val());
+            //Se verifica que cada una de las variables anteriores tienen contenido en su interior
+            if (_odometro != "" && _galones != "" && _precio != "" && _estacionId != "" && _precioGalon != "") {
+                //Se verifica si cada uno de las variables anteriores tienen un valor mayor a 0
+                if (_odometro > 0 && _galones > 0 && _precio > 0 && _estacionId > 0 && _precioGalon > 0) {
+                    console.log(ivaleid, _odometro, _galones, _precio, _estacionId, _precioGalon);
+                    $.post("../LiquidarVale/ActualizarVale", {
+                        vale: ivaleid, Odometro: _odometro, Galones: _galones, Precio: _precio, EstacionId: _estacionId, PrecioGalon: _precioGalon
+                    },
+                        function (data) {
+                            var respuesta = data;
+                            if (respuesta.codigo == 1) {
+                                GenerarMensaje("¡Éxito!", respuesta.mensaje, 2);
+                                $("#GridValeActualizado").data("kendoGrid").dataSource.read();
+                                ivaleid = 0; //Se resetea el numero de vale almacenado en la variable "ivaleid"
+                                LimpiarFormulario();
+                                $("#txtNumVale").val("");
+                            } else {
+                                GenerarMensaje("Aviso", respuesta.mensaje, 4);
+                            }
+                        });
+                }
+                else {
+                    GenerarMensaje("Aviso", "Ninguno de los campos del formulario puede tener un valor menor a 0.", 3);
+                }
+            }
+            else {
+                GenerarMensaje("Aviso", "Por favor llene todos los campos restantes en el formulario.", 3);
+            }
+        }
+        else { //No se ha buscado ningun vale.
+            GenerarMensaje("Aviso", "Para actualizar la información de un vale, primero ingrese el número de vale y luego haga clic en 'Buscar No. Vale'.", 3);
+        }
+    }
+
+    //Se encarga de eliminar el contenido actual del formulario para buscar otro
+    function LimpiarFormulario() {
+        //Sección de información en la ba base de datos
+        $('#txtEmpresa').val("");
+        $('#txtAlias').val("");
+        $('#txtPlaca').val("");
+        $('#txtTipoCombustible').val("");
+        $('#txtNoEmpleado').val("");
+        $('#txtEmpleado').val("");
+        //Sección de nuevos datos
+        $("#txtOdometro").val("");
+        $("#txtCantidadG").val("");
+        $("#txtPrecioUGal").val("");
+        $("#txtTotal").val("");
+        //Se selecciona el primer elemento del objeto $("#EstacionServicioList")
+        $("#EstacionServicioList").data("kendoDropDownList").value($("#EstacionServicioList").data("kendoDropDownList").dataSource.data()[0].id);
+    }
+
+    //Se encarga de retornar el valor de la variable global "ivaleid"
+    function GetValeId() {
+        return { NumVale: ivaleid }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+
+        //Se encarga de obtener el total de dinero a pagar por la carga de combustible
+        $("#txtPrecioUGal, #txtCantidadG").on("keyup mouseup", function () {
+            var galones = $('#txtCantidadG').val() * 1;
+            var precioGalon = $('#txtPrecioUGal').val() * 1;
+            if (galones != "" && precioGalon != "" && galones > 0 && precioGalon > 0) {
+                tt = (galones * precioGalon).toFixed(2);
+                $("#txtTotal").val(tt);
+            }
+            else {
+                $("#txtTotal").val("");
+            }
+        });
+
+        //Permite al usuario hacer enter luego de escribir el numero de vale, teniendo como focus el mismo input
+        $("#txtNumVale").keypress(function (e) {
+            if (e.which == 13) {
+                btn_Buscar_Onclick();
+            }
+        });
+
+        //Permite al usuario hacer enter luego de llenar el formulario, estando en cualquier input menos el de "No. vale"
+        $("#txtOdometro, #txtCantidadG, #txtPrecioUGal").keypress(function (e) {
+            if (e.which == 13) {
+                btnActualizar_Onclick();
+            }
+        });
+    });
+
+</script>
+
+<div class="page-wrapper">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Ingresar información combustible.
+            </h3>
+            <small>Desde éste módulo podrá liquidar un vale de combustible ya existente.</small>
+        </div>
+        <div class="panel-body">
+            <div class="col-lg-12">
+                <div class="ibox-content" style="padding-left: 0px;">
+                    <div class="row">
+                        <div class="m-t-sm">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">No Vale:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtNumVale" class="txtTab k-textbox marginFivePx">
+                                            <button type="button" class="btn btn-primary" onclick="btn_Buscar_Onclick();">Buscar No. Vale</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Odometro:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="number" id="txtOdometro" class="txtTab k-textbox marginFivePx" step="1">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Cantidad Galones:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="number" id="txtCantidadG" class="txtTab k-textbox marginFivePx" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Precio Unitario por Galon $:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="number" id="txtPrecioUGal" class="txtTab k-textbox marginFivePx" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Total Dólares $:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="number" id="txtTotal" class="txtTab k-textbox marginFivePx" disabled step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Estación de Servicio:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            @EstacionServicioList()
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Empresa:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtEmpresa" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Alias:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtAlias" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Placa:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtPlaca" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Tipo Combustible:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtTipoCombustible" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">No Empleado:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtNoEmpleado" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Empleado:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtEmpleado" disabled class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4"></div>
+                                        <div class="col-lg-8">
+                                            <br />
+                                            <button type="button" class="btn btn-primary" onclick="btnActualizar_Onclick();">Liquidar Vale</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <br />
+                                @GridValeActualizado()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@*Empieza el modal*@
+<div class="modal inmodal" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content animated bounceInRight">
+            <div class="panel-heading">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Cerrar</span>
+                </button>
+                <h3 class="modal-title">Titulo de Modal</h3>
+                <small class="font-bold">Descipcion de modal</small>
+            </div>
+            <div class="modal-body">
+                <div class="panel-body">
+                    <p>
+                        <strong>Contenido de Modal</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-white" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+@*Termina el modal*@
+
+@helper EstacionServicioList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("EstacionServicioList")
+        .DataTextField("name")
+        .DataValueField("id")
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ComboGasolineras", "Global");
+        })))
+        .HtmlAttributes(new { style = "width: 35%;" })
+    )
+}
+
+@helper GridValeActualizado()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.LiquidarVale>()
+        .Name("GridValeActualizado")
+        .AutoBind(true)
+            .Columns(c =>
+            {
+                c.Bound(col => col.Odometro).Title("Odómetro");
+                c.Bound(col => col.CantidadGalones).Title("Cantidad de galones");
+                c.Bound(col => col.PrecioGalon).Title("Precio por galón $");
+                c.Bound(col => col.TotalPrecio).Title("Precio total $");
+                c.Bound(col => col.EstacionServicio).Title("Estación de servicio");
+                c.Bound(col => col.NumeroVale).Title("No. vale");
+                c.Bound(col => col.Alias).Title("Vehículo");
+                c.Bound(col => col.Placa).Title("Placa");
+                c.Bound(col => col.Empresa).Title("Empresa");
+                c.Bound(col => col.FechaGeneracion).Title("Fecha");
+                c.Bound(col => col.NoEmpleado).Title("Número Empleado");
+                c.Bound(col => col.NombreEmpleado).Title("Empleado");
+                c.Bound(col => col.TipoCombustible).Title("Tipo Combustible");
+
+            })
+        .Mobile(MobileMode.Auto)
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single).Type(GridSelectionType.Row))
+        .Resizable(resize => resize.Columns(true))
+        .Reorderable(a => a.Columns(true))
+        .ColumnMenu()
+        .Scrollable(s => s.Enabled(true))
+        .Sortable()
+        .Filterable()
+        .HtmlAttributes(new { style = "height:100%; " })
+        .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+            .Read(r => r.Action("obtenerValeActualizado", "LiquidarVale").Data("GetValeId"))
+        )
+    )
+}

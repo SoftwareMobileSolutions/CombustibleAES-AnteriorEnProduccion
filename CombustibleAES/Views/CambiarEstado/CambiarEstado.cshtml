@@ -1,0 +1,570 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Combustible > Cambio de Estado";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    // 0 = empresa, 1 = no. vale, 2 = fechaGInicio, 3 = fechaGFin, 4 = # equipo, 5 = placa, 6 = fechaAInicio, 7 = fechaAFin, 8 = usuario
+    //var f = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    data = [];
+    var _filtro = 1;
+    var working = false;
+    var bandera = 0;
+
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    function GenerarReporte() {
+        var datosValidados = false;
+        var filtroId = $("#filtro").data("kendoDropDownList").value();
+        var _numeroVale = $("#integerInput").data("kendoNumericTextBox").value();
+        var _numeroEquipo = $("#txtNumeroEquipo").val();
+        var _placa = $("#txtPlaca").val();
+        var _fechaI = $("#fecha_inicio").data("kendoDateTimePicker").value();
+        var _fechaF = $("#fecha_fin").data("kendoDateTimePicker").value();
+        var _usuario = $("#UsuariosList").data("kendoDropDownList").value();
+
+        switch (filtroId) {
+            case "1": //Número de vale
+                if (_numeroVale != null) {
+                    if (_numeroVale > 0) {
+                        datosValidados = true;
+                    }
+                    else GenerarMensaje("Aviso", "Por favor ingrese el número de vale debe ser mayor a 0.", 3);
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de vale.", 3);
+                break;
+
+            case "2": //Número de equipo
+                if (_numeroEquipo != "") {
+                    datosValidados = true;
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de equipo.", 3);
+                break;
+
+            case "3": //Placa
+                if (_placa != "") {
+                    datosValidados = true;
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de placa.", 3);
+                break;
+
+            case "4": case "5": case "7": //Fecha de generación / Fecha de actualización / Fecha de Crédito fiscal
+                if (_fechaI != null) {
+                    if (_fechaF != null) {
+                        _fechaI = moment(_fechaI);
+                        _fechaF = moment(_fechaI);
+                        if (_fechaF.isAfter(_fechaI) || _fechaI.isSame(_fechaF)) {
+                            datosValidados = true;
+                        }
+                        else GenerarMensaje("Aviso", "La fecha fin debe ser después de la fecha de inicio.", 3);
+                    }
+                    else GenerarMensaje("Aviso", "Por favor ingrese la fecha fin.", 3);
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese la fecha de inicio.", 3);
+                break;
+
+            case "6": //Usuario
+                datosValidados = true;
+                break;
+        }
+
+        if (datosValidados) {
+            $("#GridValesEstado").data("kendoGrid").dataSource.read();
+        }
+    }
+
+    function GridData() {
+        var __idVale = $("#integerInput").data("kendoNumericTextBox")._text.val();
+        __idVale = __idVale.split(",");        
+        var _idVale = "";
+        for (i = 0; i < __idVale.length; i++) {
+            _idVale += __idVale[i];
+        }
+        
+        var _idUsuario = $("#UsuariosList").data("kendoDropDownList").value();
+        _idVale = _idVale == null ? 0 : parseInt(_idVale);
+        _idUsuario = _idUsuario == "" ? 0 : parseInt(_idUsuario);
+
+        return {
+            idVale: _idVale,
+            numEquipo: $("#txtNumeroEquipo").val(),
+            placa: $("#txtPlaca").val(),
+            fechaInicio: moment($("#fecha_inicio").data("kendoDateTimePicker").value()).format("YYYYMMDD HH:mm:ss"),
+            fechaFin: moment($("#fecha_fin").data("kendoDateTimePicker").value()).format("YYYYMMDD HH:mm:ss"),
+            idUsuario: _idUsuario,
+            filtro: _filtro
+        }
+    }
+
+    function GridValesEstado_Change(e) {
+        //console.log(e);
+        var rows = e.sender.select();
+        data = [];
+        var g = $("#GridValesEstado").data("kendoGrid");
+        $.each($("#GridValesEstado tbody tr"), function (i, e) {
+            $("tr[data-uid=" + $(e)[0].dataset.uid + "] td:first-child input").prop("checked", false);
+        });
+        rows.each(function (e, i) {
+            data.push(g.dataItem(this).NumeroVale);
+            //console.log($(this)[0].dataset.uid);
+            //console.log($(this)[]);
+            $("tr[data-uid=" + $(this)[0].dataset.uid + "] td:first-child input").prop("checked", true);
+        });
+        var ca = $("#checkAll");
+        if (g.select().length == g.dataSource.data().length) ca.prop("checked", true);
+        else ca.prop("checked", false);
+    }
+
+    function GridValesEstado_DataBound(e) {
+        var cantRegistros = $("#GridValesEstado").data("kendoGrid").dataSource.data().length;
+        if (cantRegistros > 0) {
+            $("#GridValesEstado").data("kendoGrid").clearSelection();
+            $("#estado").data("kendoDropDownList").select(0);
+            estado_OnChange();
+            $("#ControlesEstado").show();
+        }
+        else {
+            $("#ControlesEstado").hide();
+        }
+
+        $("#GridValesEstado tbody tr input").click(function () {
+            checkRow($(this));
+        });
+    }
+
+    function GridData() {
+        var __idVale = $("#integerInput").data("kendoNumericTextBox")._text.val();
+        __idVale = __idVale.split(",");
+        //console.log("Split: " + __idVale);
+        var _idVale = "";
+        for (i = 0; i < __idVale.length; i++) {
+            _idVale += __idVale[i];
+        }
+        //console.log("idVale: " + _idVale);
+        var _idUsuario = $("#UsuariosList").data("kendoDropDownList").value();
+        _idVale = _idVale == null ? 0 : parseInt(_idVale);
+        _idUsuario = _idUsuario == "" ? 0 : parseInt(_idUsuario);
+
+        return {
+            idVale: _idVale,
+            numEquipo: $("#txtNumeroEquipo").val(),
+            placa: $("#txtPlaca").val(),
+            fechaInicio: moment($("#fecha_inicio").data("kendoDateTimePicker").value()).format("YYYYMMDD HH:mm:ss"),
+            fechaFin: moment($("#fecha_fin").data("kendoDateTimePicker").value()).format("YYYYMMDD HH:mm:ss"),
+            idUsuario: _idUsuario,
+            filtro: _filtro
+        }
+    }
+
+    function checkRow(e) {
+        if (e.prop("checked")) {
+            e.parent().parent().parent().addClass("k-alt k-state-selected");
+        }
+        else {
+            e.parent().parent().parent().removeClass("k-alt k-state-selected");
+        }
+        var GData = new Object();
+        GData.sender = $("#GridValesEstado").data("kendoGrid");
+        GridValesEstado_Change(GData);
+    }
+
+    //Se encarga de esconder cada uno de los controles de filtrado
+    function esconderControles() {
+        $("#controlesFecha").hide();
+        $("#controlesNumeroVale").hide();
+        $("#controlesCodigoFiscal").hide();
+        $("#controlesPlaca").hide();
+        $("#controlesNumeroEquipo").hide();
+        $("#controlesUsuario").hide();
+        $("#integerInput").data("kendoNumericTextBox")._text.val(0);
+        $("#integerInput").data("kendoNumericTextBox").element.val(0);
+        $("#txtPlaca").val("");
+        $("#txtNumeroVale").val("");
+        $("#txtNumeroEquipo").val("");
+        $("#UsuariosList").data("kendoDropDownList").select(0);
+    }
+
+    //Se encarga de mostrar el o los controles adecuados según el valor seleccionado del DropDownList "filtro"
+    function filtro_OnChange() {
+        var valor = $("#filtro").data("kendoDropDownList").value();
+        esconderControles();
+        switch (valor) {
+
+            case "1"://"Número de vale"
+                $("#controlesNumeroVale").show();
+                $("#integerInput").data("kendoNumericTextBox").focus();
+                _filtro = 1;
+                break;
+
+            case "2"://"Número de equipo"
+                $("#controlesNumeroEquipo").show();
+                $("#txtNumeroEquipo").focus();
+                _filtro = 2;
+                break;
+
+            case "3"://"Placa"
+                $("#controlesPlaca").show();
+                $("#txtPlaca").focus();
+                _filtro = 3;
+                break;
+
+            case "4"://"Fecha de generación"
+                $("#controlesFecha").show();
+                _filtro = 4;
+                break;
+
+            case "5"://"Fecha de actualización"
+                $("#controlesFecha").show();
+                _filtro = 5;
+                break;
+
+            case "6"://"Usuario"
+                $("#controlesUsuario").show();
+                _filtro = 6;
+                break;
+
+            case "7"://"Fecha de Crédito fiscal"
+                $("#controlesFecha").show();
+                _filtro = 7;
+                break;
+        }
+    }
+
+    function estado_OnChange() {
+        if (bandera == 1 && $("#GridValesEstado").data("kendoGrid").dataSource.data().length > 0) {
+            var estado = $("#estado").data("kendoDropDownList").value();
+            var c = $("#controles");
+            c.hide();
+            if ($("#lblControl").length == 0) {
+                c.html("<label id='lblControl' for='txtControl'></label><input type='text' id='txtControl' class='txtTab k-textbox marginFivePx'>")
+            }
+            $("#txtControl").val("");
+            switch (estado) {
+                case "1": //Estado Generado
+                    GenerarMensaje("ATENCIÓN - Aviso de estado", "La información de la recarga de combustible de el/los vales seleccionados será eliminada(si tuviese), incluyendo el crédito fiscal (si tuviese).", 3);
+                    break;
+
+                case "3": //Estado Cerrado
+                    GenerarMensaje("ATENCIÓN - Aviso de estado", "El número de crédito fiscal de el/los vales seleccionados será eliminado(si tuviese).", 3);
+                    break;
+
+                case "6": //Estado Anulado
+                    $("#lblControl").html("Comentario de anulación:&nbsp;");
+                    c.show();
+                    break;
+            }
+        }
+        else {
+            bandera = 1;
+        }
+    }
+
+    function filtro_DataBound() {
+        filtro_OnChange();
+    }
+
+    function ActualizarEstado() {
+        var kendoData = $("#GridValesEstado").data("kendoGrid").dataSource.data();
+        if (kendoData.length > 0) {
+            if (data.length > 0) {
+                if ($("#estado").data("kendoDropDownList").value() > 0) {                    
+                    var primerEstado = null;
+                    var estadosIguales = true;                    
+                    for (i = 0; i < kendoData.length; i++) {
+                        for (j = 0; j < data.length; j++) {
+                            if (kendoData[i].NumeroVale == data[j]) {
+                                if (primerEstado == null) {
+                                    primerEstado = kendoData[i].IdEstado;
+                                }
+                                else {
+                                    if (kendoData[i].IdEstado != primerEstado) {
+                                        estadosIguales = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (estadosIguales == false) {
+                            break;
+                        }
+                    }
+
+                    if (estadosIguales) {
+                        var estadoValidado = false;
+                        if ($("#estado").data("kendoDropDownList").value() == 6) {
+                            if ($("#txtControl").val() != "") {
+                                estadoValidado = true;
+                            }
+                            else {
+                                GenerarMensaje("Aviso", "Por favor ingrese el comentario de anulación.", 3);
+                            }
+                        }
+                        else {
+                            estadoValidado = true;
+                        }
+
+                        if (estadoValidado) {
+                            var _comentarioAnulado = $("#txtControl").length > 0 ? $("#txtControl").val() : "";
+                            $.post(
+                                "../CambiarEstado/ActualizarEstados",
+                                {
+                                    vales: data, estadoId: parseInt($("#estado").data("kendoDropDownList").value()), comentarioAnulado: _comentarioAnulado
+                                },
+                                function (r) {
+                                    GenerarMensaje("Aviso", r.mensaje, r.nivel);
+                                    if (r.respuesta == 1) {
+                                        $("#txtControl").val("");
+                                        bandera = 0;
+                                        $("#GridValesEstado").data("kendoGrid").dataSource.read();
+                                    }
+                                }
+                            );
+                        }
+                    }
+                    else {
+                        GenerarMensaje("Aviso", "Los vales de combustible seleccionados deben tener el mismo estado para poder asignarles uno nuevo.", 3);
+                    }
+                }
+                else {
+                    GenerarMensaje("Aviso", "Por favor seleccione el nuevo estado para asignar a el/los vales de combustible.", 3);
+                }
+            }
+            else {
+                GenerarMensaje("Aviso", "Por favor seleccione al menos un vale para asignarle un nuevo estado.", 3);
+            }
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+
+        $("#integerInput, #txtNumeroEquipo, #txtPlaca").keypress(function (e) {
+            if (e.keyCode == 13) GenerarReporte();
+        });
+
+        $("#checkAll").click(function () {
+            var o = $("#checkAll");
+            var g = $("#GridValesEstado").data("kendoGrid");
+            if (o.prop("checked")) g.select("tr");
+            else g.clearSelection();
+        });
+
+    });
+</script>
+<style>
+    tr, td {
+        border: 1px solid white;
+        padding: 5px;
+        text-align: left;
+    }
+
+    .disable-select {
+        user-select: none; /* supported by Chrome and Opera */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+    }
+</style>
+<div class="page-wrapper">
+    <div class="panel panel-default" style="height:100%;">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Cambio de Estado de Vales
+            </h3>
+            <small>Desde éste módulo podrá fácilmente cambiar el estado de uno o más vales de combustible a la vez.</small>
+        </div>
+        <div class="panel-body" style="height: 100%;">
+            <div class="col-lg-12" style="height: 100%;">
+                <div class="row" style="height: 100%; margin-bottom: 5px; margin-top: -10px;">
+                    <span class="pull-right text-right">
+                        <label>Filtro de datos por:&nbsp;</label>@DropDownOpciones()
+                    </span>
+                </div>
+                <div class="row" style="height: 100%;">
+                    <span id="filtrosControles" class="pull-right text-right">
+                        <div id="controlesNumeroVale" style="margin-bottom: 5px;" hidden>
+                            <label>Número de vale:</label>&nbsp;@RenderPage("~/Views/PartialViews/Template/Integer.cshtml")
+                        </div>
+                        <div id="controlesNumeroEquipo" style="margin-bottom: 5px;" hidden>
+                            <label>Número de equipo:</label>&nbsp;<input type="text" id="txtNumeroEquipo" class="txtTab k-textbox marginFivePx" />
+                        </div>
+                        <div id="controlesPlaca" style="margin-bottom: 5px;" hidden>
+                            <label>Placa:</label>&nbsp;<input type="text" id="txtPlaca" class="txtTab k-textbox marginFivePx" />
+                        </div>
+                        <div id="controlesFecha" style="margin-bottom: 5px;" hidden>
+                            <label>Fecha Inicio:</label>@RenderPage("~/Views/PartialViews/Template/fechainicio.cshtml")
+                            <label>Fecha Fin:</label>@RenderPage("~/Views/PartialViews/Template/fechafin.cshtml")
+                        </div>
+                        <div id="controlesUsuario" style="margin-bottom: 5px;" hidden>
+                            <label>Usuario:</label>&nbsp;@ComboUsuarios()
+                        </div>
+                        <button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="GenerarReporte()">Generar</button>
+                    </span>
+                    <div class="m-t-sm" style="height: 100%">
+                        <div class="row" style="height: 100%;">
+                            <div class="col-md-12" style="height: 100%; margin-top: 10px;">
+                                <table id="ControlesEstado" hidden>
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" id="checkAll">
+                                            <label for="checkAll" class="disable-select">Seleccionar Todos</label>
+                                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                                            <label>Nuevo estado:</label>&nbsp;@Estado()
+                                            &nbsp;&nbsp;&nbsp;
+                                            <span id="controles"></span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="ActualizarEstado()">Actualizar Estado(s)</button>
+                                        </td>
+                                    </tr>
+                                </table>
+                                @GridValesEstado()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper GridValesEstado()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.CambiarEstado>()
+        .Name("GridValesEstado")
+        .AutoBind(false)
+        .Columns(col =>
+        {
+            col.Bound(c => c.NumeroVale).ClientTemplate("<center><input type='checkbox'></center>").Title("Seleccionar").Width(100).Filterable(false);
+            col.Bound(c => c.NumeroVale).Title("No. Vale").Width(200);
+            col.Bound(c => c.EstadoVale).Title("Estado").Width(200);
+            col.Bound(c => c.SubFlota).Title("Subflota").Width(200);
+            col.Bound(c => c.Alias).Title("Alias").Width(200);
+            col.Bound(c => c.Placa).Title("Placa").Width(200);
+            col.Bound(c => c.Empresa).Title("Empresa").Width(200);
+            col.Bound(c => c.Usuario).Title("Usuario").Width(200);
+            col.Bound(c => c.FechaGeneracion).Title("Fecha Generación").Width(200);
+            col.Bound(c => c.FechaActualizacion).Title("Fecha Actualización").Width(200);
+            col.Bound(c => c.NoEmpleado).Title("No. Empleado").Width(200);
+            col.Bound(c => c.TipoCombustible).Title("Tipo Combustible").Width(200);
+            col.Bound(c => c.CentroCosto).Title("Centro Costo").Width(200);
+            col.Bound(c => c.Odometro).Title("Odometro").Width(200);
+            col.Bound(c => c.CantidadGalones).Title("Cantidad Galones").Width(200);
+            col.Bound(c => c.TotalPrecio).Title("Total Precio").Width(200);
+            col.Bound(c => c.CreditoFiscal).Title("Crédito Fiscal").Width(200);
+            col.Bound(c => c.EstacionServicio).Title("Estación Servicio").Width(200);
+        })
+        .Scrollable()
+        .Filterable(f => f
+            .Mode(GridFilterMode.Row)
+            .Operators(ops => ops.
+                ForString(str => str
+                    .Clear()
+                    .Contains("Contiene")
+                    .IsEqualTo("Es igual a")
+                )
+            )
+        )
+        .Excel(exc => exc.AllPages(true).FileName("CambiarEstado.xlsx"))
+        .Selectable(s => s.Mode(GridSelectionMode.Multiple))
+        .PersistSelection(true)
+        .Mobile(MobileMode.Auto)
+        .Sortable()
+        .Pageable(x =>
+        {
+            x.Enabled(true);
+            x.PreviousNext(true);
+            x.PageSizes(true);
+            x.Info(true);
+            x.Input(true);
+            x.Numeric(false);
+            x.PageSizes(new List<object> { 20, 30, 40, 50, 100 }).Refresh(false);
+
+        })
+        .NoRecords(nr => nr.Template("<h1 style='   font-color: gray;'>No hay registros para mostrar.</h1>"))
+        .Scrollable()
+        .Excel(excel => excel
+        .FileName("CambiarEstado").AllPages(true)
+        .Filterable(true))  
+        .ToolBar(tb => tb.Excel().Text("Exportar a Excel"))
+        .DataSource(ds => ds.Ajax().PageSize(100).Read(r => r.Action("ObtenerValesEstado", "CambiarEstado").Data("GridData")))
+        .Events(e => e.DataBound("GridValesEstado_DataBound").Change("GridValesEstado_Change"))
+    )
+}
+
+@helper ComboUsuarios()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("UsuariosList")
+        .DataValueField("IdUsuario")
+        .DataTextField("Usuario")
+        .DataSource(ds => ds.Read(r => r.Action("ObtenerUsuarios", "Global")))
+        //.Events(e => e.Change("UsuariosList_Change"))
+    )
+}
+
+@helper DropDownOpciones()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("filtro")
+        .DataValueField("IdFiltro")
+        .DataTextField("Nombre")
+        .DataSource(ds => ds.Read(r => r.Action("ObtenerFiltros", "CambiarEstado")))
+        .HtmlAttributes(new { style = "width: 165px;" })
+        .Events(e => e.Change("filtro_OnChange").DataBound("filtro_DataBound"))
+    )
+}
+
+@helper Estado()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("estado")
+        .DataTextField("Estado")
+        .DataValueField("IdEstado")
+        .DataSource(
+            source => source.ServerFiltering(false)
+            .Custom()
+            .AutoSync(true)
+            .Transport(
+                transport => transport.Read(
+                    r => r.Action("ObtenerEstados", "CambiarEstado")//.Data("EstadoData")
+                )
+            )
+        )
+        .Events(e => e.Change("estado_OnChange")/*.DataBound("estado_DataBound")*/)
+    )
+}

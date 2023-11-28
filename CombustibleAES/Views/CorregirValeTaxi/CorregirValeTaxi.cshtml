@@ -1,0 +1,636 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Taxi > Corrección Vales Taxi";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    var ivaleid = 0;
+    var v = null;
+
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    function btn_Buscar_Onclick() {
+        var _numVale = $("#txtNumVale").val();
+        if (_numVale != "") {
+            $.post(
+                "../CorregirValeTaxi/ObtenerValeTaxiCorregir",
+                { idVale: _numVale },
+                function (r) {
+                    if (r.codigo == 1) {
+                        v = r.Vale;
+                        ivaleid = v.NoVale;
+                        //$("#estado").data("kendoDropDownList").value(v.IdEstado);
+                        if (v.IdEstado == 3) {
+                            $("#txtCreditoFiscal").attr("disabled", true);
+                            $("#chkCF").prop("checked", false);
+                            $("#chkCF").show();
+                            $("#lblCF").show();
+                        }
+                        else {
+                            $("#chkCF").prop("checked", false);
+                            $("#chkCF").hide();
+                            $("#lblCF").hide();
+                        }
+                        $("#txtCreditoFiscal").val(v.CreditoFiscal);
+                        $("#txtDestino1").val(v.Destino1);
+                        $("#txtDestino2").val(v.Destino2);
+                        $("#txtDestino3").val(v.Destino3);
+                        $("#fechaSalida").data("kendoDateTimePicker").value(moment(v.FechaSalida).format("DD/MM/YYYY LT"));
+                        $("#fechaLlegada").data("kendoDateTimePicker").value(moment(v.FechaLlegada).format("DD/MM/YYYY LT"));
+                        $("#txtConductor").val(v.Conductor);
+                        $("#txtMonto").val(v.MontoVale);
+                        $("#txtNoVehiculo").val(v.NoVehiculo);
+                        $("#fechasimple5").data("kendoDatePicker").value(v.FechaCredito == null ? moment(new Date()).format("YYYY/MM/DD") : moment(v.FechaCredito).format("YYYY/MM/DD"));
+                        $("#estado").data("kendoDropDownList").dataSource.read();
+                        GenerarMensaje("Aviso", "Mostrando información del vale de taxi No. " + v.NoVale, 2);
+                    }
+                    else GenerarMensaje("Aviso", "El número de vale especificado no existe.", 4);
+                }
+            );
+        }
+        else GenerarMensaje("Aviso", "Primero ingrese el número de vale de taxi.", 3);
+    }
+
+    function btnCorregir_Onclick() {
+        if (ivaleid > 0) {
+            var _estadoVale = $("#estado").data("kendoDropDownList").value();
+            var _creditoFiscal = $("#txtCreditoFiscal").val();
+            var _destino1 = $("#txtDestino1").val();
+            var _destino2 = $("#txtDestino2").val();
+            var _destino3 = $("#txtDestino3").val();
+            var _fechaSalida = $("#fechaSalida").data("kendoDateTimePicker").value();
+            var _fechaLlegada = $("#fechaLlegada").data("kendoDateTimePicker").value();
+            var _conductor = $("#txtConductor").val();
+            var _montoVale = $("#txtMonto").val();
+            var _noVehiculo = $("#txtNoVehiculo").val();
+            var cfValidado = false;
+            var _cA = $("#txtComentarioAnulado").val();
+            var _fechaCF = $("#fechasimple5").data("kendoDatePicker").value();
+            if (_estadoVale == 3) {
+                if (_creditoFiscal != "") {
+                    if (_fechaCF != null) {
+                        cfValidado = true;
+                    }
+                    else {
+                        GenerarMensaje("Aviso", "Por favor ingrese la fecha de asignación del número de crédito fiscal.", 4);
+                    }
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de crédito fiscal.", 4);
+            }
+            else cfValidado = true;
+
+            if (_estadoVale != 1 && _estadoVale != 4 && _estadoVale != 5 && _estadoVale != 6) {
+                if (cfValidado) {
+                    if (_destino1 != "") {
+                        if (_fechaSalida != null) {
+                            if (_fechaLlegada != null) {
+                                var fs = moment(_fechaSalida);
+                                var fl = moment(_fechaLlegada);
+                                if (fs.isBefore(fl) || fs.isSame(fl)) {
+                                    if (_conductor != "") {
+                                        if (_montoVale != "") {
+                                            if (_montoVale > 0) {
+                                                if (_noVehiculo != "") {
+                                                    var cValidado = false;
+                                                    if (_estadoVale == 4) {
+                                                        if (_cA != "") {
+                                                            cValidado = true;
+                                                        }
+                                                        else GenerarMensaje("Aviso", "Para anular un vale debe ingresar un comentario del por qué la anulación del mismo.", 3);
+                                                    }
+                                                    else cValidado = true;
+                                                    // Fecha de cambio de estado
+                                                    var _fechaEstado = null;
+                                                    if (_estadoVale != v.IdEstado)
+                                                        _fechaEstado = "getFecha";
+                                                    else {
+                                                        if (v.FechaEstado != null)
+                                                            _fechaEstado = moment(v.FechaEstado).format("YYYYMMDD HH:mm:ss");;
+                                                    }
+
+                                                    if (cValidado) {
+                                                        $.post(
+                                                            "../CorregirValeTaxi/CorregirVale",
+                                                            {
+                                                                idVale: ivaleid, idEstado: _estadoVale, hacia: _destino1, hacia2: _destino2, hacia3: _destino3, fechaSalida: moment(_fechaSalida).format("YYYYMMDD HH:mm:ss"),
+                                                                fechaLlegada: moment(_fechaLlegada).format("YYYYMMDD HH:mm:ss"), conductor: _conductor, monto: _montoVale, noVehiculo: _noVehiculo, comentarioAnulado: _cA,
+                                                                creditoFiscal: _creditoFiscal, fechaCredito: moment(_fechaCF).format("YYYYMMDD HH:mm:ss"), fechaEstado: _fechaEstado
+                                                            },
+                                                            function (r) {
+                                                                GenerarMensaje("Aviso", r.mensaje, r.nivel);
+                                                                if (r.respuesta == 1) {
+                                                                    LimpiarFormulario();
+                                                                    $("#GridValeCorregido").data("kendoGrid").dataSource.read();
+                                                                    HabilitarControles();
+                                                                }
+                                                            }
+                                                        );
+                                                    }
+                                                }
+                                                else GenerarMensaje("Avsiso", "Por favor ingrese el número del vehículo.", 3);
+                                            }
+                                            else GenerarMensaje("Aviso", "El monto del vale debe ser mayor a $0.00.", 3);
+                                        }
+                                        else GenerarMensaje("Aviso", "Por favor ingrese el monto del vale de taxi.", 3)
+                                    }
+                                    else GenerarMensaje("Aviso", "Por favor ingrese el nombre del conductor.", 3);
+                                }
+                                else GenerarMensaje("Aviso", "La fecha de salida debe ser anterior a la fecha de llegada", 3)
+                            }
+                            else GenerarMensaje("Aviso", "Por favor ingrese la fecha de llegada.", 3);
+                        }
+                        else GenerarMensaje("Aviso", "Por favor ingrese la fecha de salida.", 3);
+                    }
+                    else GenerarMensaje("Aviso", "Por favor ingrese al menos un destino.", 3);
+                }
+            }
+            else { //Simple cambio de estado
+                if (_estadoVale == 4) {
+                    if (_cA != "") {
+                        cValidado = true;
+                    }
+                    else GenerarMensaje("Aviso", "Para anular un vale debe ingresar un comentario del por qué la anulación del mismo.", 3);
+                }
+                else cValidado = true;
+                // Fecha de cambio de estado
+                var _fechaEstado = null;
+                if (_estadoVale != v.IdEstado)
+                    _fechaEstado = "getFecha";
+                else {
+                    if (v.FechaEstado != null)
+                        _fechaEstado = moment(v.FechaEstado).format("YYYYMMDD HH:mm:ss");;
+                }
+
+                if (cValidado) {
+                    $.post(
+                        "../CorregirValeTaxi/CorregirVale",
+                        {
+                            idVale: ivaleid, idEstado: _estadoVale, hacia: _destino1, hacia2: _destino2, hacia3: _destino3, fechaSalida: moment(_fechaSalida).format("YYYYMMDD HH:mm:ss"),
+                            fechaLlegada: moment(_fechaLlegada).format("YYYYMMDD HH:mm:ss"), conductor: _conductor, monto: _montoVale, noVehiculo: _noVehiculo, comentarioAnulado: _cA,
+                            creditoFiscal: _creditoFiscal, fechaCredito: moment(_fechaCF).format("YYYYMMDD HH:mm:ss"), fechaEstado: _fechaEstado
+                        },
+                        function (r) {
+                            GenerarMensaje("Aviso", r.mensaje, r.nivel);
+                            if (r.respuesta == 1) {
+                                LimpiarFormulario();
+                                $("#GridValeCorregido").data("kendoGrid").dataSource.read();
+                                HabilitarControles();
+                            }
+                        }
+                    );
+                }
+            }
+
+        }
+        else GenerarMensaje("Aviso", "Para corregir la información de un vale de taxi primero seleccione el número de vale.", 3);
+    }
+
+    function DeshabilitarControles() {
+        $("#txtCreditoFiscal").attr("disabled", true);
+        $("#txtDestino1").attr("disabled", true);
+        $("#txtDestino2").attr("disabled", true);
+        $("#txtDestino3").attr("disabled", true);
+        $("#fechaSalida").data("kendoDateTimePicker").enable(false);
+        $("#fechaLlegada").data("kendoDateTimePicker").enable(false);
+        $("#txtConductor").attr("disabled", true);
+        $("#txtMonto").attr("disabled", true);
+        $("#txtNoVehiculo").attr("disabled", true);
+        $("#txtComentarioAnulado").attr("disabled", true);
+    }
+
+    function HabilitarControles() {
+        $("#txtCreditoFiscal").removeAttr("disabled");
+        $("#txtDestino1").removeAttr("disabled");
+        $("#txtDestino2").removeAttr("disabled");
+        $("#txtDestino3").removeAttr("disabled");
+        $("#fechaSalida").data("kendoDateTimePicker").enable(true);
+        $("#fechaLlegada").data("kendoDateTimePicker").enable(true);
+        $("#txtMonto").removeAttr("disabled");
+        $("#txtConductor").removeAttr("disabled");
+        $("#txtNoVehiculo").removeAttr("disabled");
+        $("#txtComentarioAnulado").removeAttr("disabled");
+    }
+
+    function chkCF_OnChange() {
+        if (document.getElementById("txtCreditoFiscal").disabled) {
+            $("#txtCreditoFiscal").removeAttr("disabled");
+            $("#txtCreditoFiscal").val("");
+            $("#fechasimple5").data("kendoDatePicker").enable(true);
+            $("#fechasimple5").data("kendoDatePicker").value(moment(new Date()).format("YYYY/MM/DD"));
+        }
+        else {
+            $("#txtCreditoFiscal").val(v.CreditoFiscal);
+            $("#txtCreditoFiscal").attr("disabled", true);
+            $("#fechasimple5").data("kendoDatePicker").enable(false);
+            $("#fechasimple5").data("kendoDatePicker").value(v.FechaCredito == null ? moment(new Date()).format("YYYY/MM/DD") : moment(v.FechaCredito).format("YYYY/MM/DD"));
+        }
+    }
+
+    //Se encarga de habilitar o no el campo de credito fiscal
+    function estado_OnChange() {
+        if (ivaleid > 0) {
+            var s = $("#estado").data("kendoDropDownList").value();
+            var m = "";
+            switch (s) {
+                case 1: case "1":
+                    DeshabilitarControles();
+                    $("#comentarioContenedor").hide();
+                    $("#txtCreditoFiscal").attr("disabled", true);
+                    $("#fechasimple5").data("kendoDatePicker").enable(false);
+                    $("#chkCF").prop("checked", false);
+                    $("#chkCF").hide();
+                    $("#lblCF").hide();
+                    if (v.IdEstado != 1 && v.IdEstado != 3) {
+                        if (v.Destino1 != null || v.CreditoFiscal != null) {
+                            m = "La información previa de este vale de taxi será eliminada debido al estado que ha seleccionado.";
+                            GenerarMensaje("Aviso de estado", m, 3);
+                        }
+                    }
+                    else if (v.IdEstado == 3) {
+                        $("#chkCF").prop("checked", false);
+                        $("#chkCF").hide();
+                        $("#lblCF").hide();
+                        m = "La información previa de este vale de taxi será eliminada, incluyendo el crédito fiscal. Esto debido al estado ha seleccionado";
+                        GenerarMensaje("Aviso de estado", m, 3);
+                    }
+                    break;
+
+                case 2: case "2":
+                    HabilitarControles();
+                    $("#comentarioContenedor").hide();
+                    $("#txtCreditoFiscal").attr("disabled", true);
+                    $("#fechasimple5").data("kendoDatePicker").enable(false);
+                    $("#chkCF").prop("checked", false);
+                    $("#chkCF").hide();
+                    $("#lblCF").hide();
+                    if (v.CreditoFiscal != null && v.IdEstado != 2) {
+                        m = "El número de crédito fiscal previo de éste vale será eliminado debido al estado que seleccionado.";
+                        GenerarMensaje("Aviso de estado", m, 3);
+                    }
+                    break;
+
+                case 3: case "3":
+                    HabilitarControles();
+                    $("#comentarioContenedor").hide();
+                    $("#chkCF").prop("checked", false);
+                    if (v.IdEstado == 3 || v.CreditoFiscal != null) {
+                        $("#txtCreditoFiscal").attr("disabled", true);
+                        $("#fechasimple5").data("kendoDatePicker").enable(false);
+                        $("#chkCF").show();
+                        $("#lblCF").show();
+                    }
+                    else {
+                        $("#txtCreditoFiscal").removeAttr("disabled");
+                        $("#fechasimple5").data("kendoDatePicker").enable(true);
+                        $("#chkCF").hide();
+                        $("#lblCF").hide();
+                    }
+                    break;
+
+                case 4: case "4":
+                    DeshabilitarControles();
+                    $("#txtComentarioAnulado").removeAttr("disabled");
+                    $("#chkCF").prop("checked", false);
+                    $("#chkCF").hide();
+                    $("#lblCF").hide();
+                    if (v.ComentarioAnulado != null) {
+                        $("#txtComentarioAnulado").val(v.ComentarioAnulado);
+                    }
+                    else $("#txtComentarioAnulado").val("");
+                    $("#comentarioContenedor").show();
+                    //console.log("si llega");
+                    break;
+
+                default:
+                    DeshabilitarControles();
+                    $("#comentarioContenedor").hide();
+                    $("#txtCreditoFiscal").attr("disabled", true);
+                    $("#fechasimple5").data("kendoDatePicker").enable(false);
+                    $("#chkCF").prop("checked", false);
+                    $("#chkCF").hide();
+                    $("#lblCF").hide();
+            }
+        }
+    }
+
+    function estado_DataBound() {
+        if (v != null) {
+            $("#estado").data("kendoDropDownList").value(v.IdEstado);
+            /*
+            if (v.UserTypeId == 6 || v.UserTypeId == 7) {
+                DeshabilitarControles();
+                if (v.EnableAnular == true) {
+                    $("#estado").data("kendoDropDownList").enable(true);
+                    $("#btnCorregir").removeAttr("disabled");
+                }
+                else if (v.EnableAnular == false) {
+                    $("#estado").data("kendoDropDownList").enable(false);
+                    $("#btnCorregir").attr("disabled", true);
+                }
+            }
+            */
+            estado_OnChange();
+        }
+        else $("#estado").data("kendoDropDownList").select(0);
+    }
+
+    function DataEstado() {
+        var _i;
+        if (v == null) {
+            _i = 0;
+        }
+        else {
+            _i = v.IdEstado;
+        }
+
+        return {
+            estadoId: _i
+        }
+    }
+
+    //Se encarga de eliminar el contenido actual del formulario para buscar otro
+    function LimpiarFormulario() {
+        $("#estado").data("kendoDropDownList").value($("#estado").data("kendoDropDownList").dataSource.data()[0].IdEstado);
+        $("#txtCreditoFiscal").val("");
+        $("#txtDestino1").val("");
+        $("#txtDestino2").val("");
+        $("#txtDestino3").val("");
+        $("#txtConductor").val("");
+        $("#txtMonto").val("");
+        $("#txtNoVehiculo").val("");
+        $("#txtComentarioAnulado").val("");
+    }
+
+    //Se encarga de retornar el valor de la variable global "ivaleid"
+    function GetValeId() {
+        valeTemp = ivaleid;
+        ivaleid = 0;
+        return { idvale: valeTemp }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+
+        $("#txtNumVale").keypress(function (e) {
+            if (e.charCode == 13) {
+                btn_Buscar_Onclick();
+            }
+        });
+
+        $("#txtCreditoFiscal, #txtDestino1, #txtDestino2, #txtDestino3, #txtConductor, #txtMonto, #txtNoVehiculo, #txtComentarioAnulado").keypress(function (e) {
+            if (e.charCode == 13) {
+                btnCorregir_Onclick();
+            }
+        });
+
+
+    });
+
+</script>
+<div class="page-wrapper">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Corregir Vale Taxi
+            </h3>
+            <small>Deste éste módulo podrá corregir la información de un vale de taxi.</small>
+        </div>
+        <div class="panel-body">
+            <div class="col-lg-12">
+                <div class="ibox-content" style="padding-left: 0px;">
+                    <div class="row">
+                        <div class="m-t-sm">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">No Vale:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtNumVale" class="txtTab k-textbox marginFivePx">
+                                            <button type="button" class="btn btn-primary" onclick="btn_Buscar_Onclick();">Buscar No. Vale</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Estado del vale:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            @Estado()
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Crédito fiscal:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtCreditoFiscal" class="txtTab k-textbox marginFivePx" disabled>
+                                            <input type="checkbox" id="chkCF" value="false" onclick="chkCF_OnChange();" hidden />  <label for="chkCF" id="lblCF" hidden>Cambiar crédito fiscal</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Fecha de Crédito fiscal:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            @RenderPage("~/Views/PartialViews/Template/fechasimple5.cshtml")
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Destino 1:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtDestino1" class="txtTab k-textbox marginFivePx" placeholder="Destino 1">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Destino 2:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtDestino2" class="txtTab k-textbox marginFivePx" placeholder="Destino 2 (Opcional)">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Destino 3:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtDestino3" class="txtTab k-textbox marginFivePx" placeholder="Destino 3 (Opcional)">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Fecha Salida:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            @FechaSalida()
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Fecha Llegada:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            @FechaLlegada()
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Conductor:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtConductor" class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Monto Vale $:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="number" id="txtMonto" class="txtTab k-textbox marginFivePx" step="0.01">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4">
+                                            <label class="control-label">No. Vehiculo:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <input type="text" id="txtNoVehiculo" class="txtTab k-textbox marginFivePx">
+                                        </div>
+                                    </div>
+                                    <div class="form-group" id="comentarioContenedor" hidden>
+                                        <div class="col-lg-4">
+                                            <label class="control-label">Comentario de anulación:</label>
+                                        </div>
+                                        <div class="col-lg-8">
+                                            <textarea id="txtComentarioAnulado" class="txtTab k-textarea marginFivePx" style="min-width:50%; min-height: 80px; max-width: 50%; max-height: 80px; padding: 5px;"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-lg-4"></div>
+                                        <div class="col-lg-8">
+                                            <br />
+                                            <button type="button" id="btnCorregir" class="btn btn-primary" onclick="btnCorregir_Onclick();">Corregir Vale</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <br />
+                                @GridValeCorregido()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper GridValeCorregido()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.CorregirValeTaxi>()
+        .Name("GridValeCorregido")
+        .AutoBind(false)
+            .Columns(c =>
+            {
+                c.Bound(col => col.NoVale).Title("No. vale");
+                c.Bound(col => col.Estado).Title("Estado");
+                c.Bound(col => col.Destino1).Title("Destino 1");
+                c.Bound(col => col.Destino2).Title("Destino 2");
+                c.Bound(col => col.Destino3).Title("Destino 3");
+                c.Bound(col => col.FechaSalida).Title("Fecha Salida");
+                c.Bound(col => col.FechaLlegada).Title("Fecha Llegada");
+                c.Bound(col => col.Conductor).Title("Conductor");
+                c.Bound(col => col.MontoVale).Title("Monto Vale");
+                c.Bound(col => col.NoVehiculo).Title("No. Vehiculo");
+            })
+        .Mobile(MobileMode.Auto)
+        .Selectable(selectable => selectable.Mode(GridSelectionMode.Single).Type(GridSelectionType.Row))
+        .Resizable(resize => resize.Columns(true))
+        .Reorderable(a => a.Columns(true))
+        .ColumnMenu()
+        .Scrollable(s => s.Enabled(true))
+        .Sortable()
+        .Filterable()
+        .HtmlAttributes(new { style = "height:100%; " })
+        .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+            .Read(r => r.Action("MostrarValeCorregido", "CorregirValeTaxi").Data("GetValeId"))
+        )
+    )
+}
+
+@helper Estado()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("estado")
+        .DataTextField("Estado")
+        .DataValueField("IdEstado")
+        .DataSource(
+            source => source.ServerFiltering(false)
+            .Custom()
+            .AutoSync(true)
+            .Transport(
+                transport => transport.Read(
+                    r => r.Action("ObtenerEstadosValeTaxi", "CorregirValeTaxi").Data("DataEstado")
+                )
+            )
+        )
+        .Events(e => e.Change("estado_OnChange").DataBound("estado_DataBound"))
+    )
+}
+
+@helper FechaSalida()
+{
+    @(Html.Kendo().DateTimePicker()
+        .Name("fechaSalida")
+        .Format("dd/MM/yyyy hh:mm tt")
+        .Value(DateTime.Now)
+        .HtmlAttributes(new { style = "width: 30%;" })
+    )
+}
+
+@helper FechaLlegada()
+{
+    @(Html.Kendo().DateTimePicker()
+        .Name("fechaLlegada")
+        .Format("dd/MM/yyyy hh:mm tt")
+        .Value(DateTime.Now)
+        .HtmlAttributes(new { style = "width: 30%;" })
+    )
+}

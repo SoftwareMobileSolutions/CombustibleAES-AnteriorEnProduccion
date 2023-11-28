@@ -1,0 +1,19 @@
+﻿@(Html.Kendo().DropDownList()
+    .Name("DDLMobile")
+    .DataTextField("texto")
+    .DataValueField("valor")
+    .Events(e => e.Change("DDLMobile_Change").DataBound("DDLMobile_DataBound"))
+    .HtmlAttributes(new { style = "width:250px;" })
+    .Filter("contains")
+    .DataSource(source => source
+    .ServerFiltering(false)
+    .Custom()
+    .AutoSync(true)
+    .Transport(transport => transport
+    .Read(read =>
+    {
+        //read.Action("DDLSubflota", "Comandos");
+        read.Action("DDLVehiculo", "Global").Data("GetSubfleetID");
+    })))
+)
+

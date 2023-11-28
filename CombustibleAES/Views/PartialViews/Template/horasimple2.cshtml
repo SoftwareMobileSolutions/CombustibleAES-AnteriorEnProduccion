@@ -1,0 +1,39 @@
+﻿<script type="text/javascript">
+
+    var DateTimeNow2, fecha2;
+
+    $(window).load(function () {
+        MaskDT2();
+        //fecha2 = /*GetTimePickerVal("horasimple2")*/$('#horasimple2').data("kendoTimePicker").value();
+        DefaultTime2()
+    });
+
+    //$(document).on('click', 'span [aria-controls="horasimple2_timeview"]', function () { addLastDayHour('horasimple2_timeview'); });
+
+    //Colocar mascara a los datatimepicker para cuando se vaya digitando no coloquen mas o menos valores de los que correpsonden
+    function MaskDT2() {
+        $("#horasimple2").kendoMaskedTextBox({
+            mask: "00:00"
+        }).removeClass("k-textbox");
+    }
+
+    //Cuando sale del foco del datetimepicker ejecutar lo siguiente
+    $(document).on("focusout", "#horasimple2", function () { Valfecha2(); });
+
+    //Validar fecha de Fin
+    function Valfecha2() {
+        fecha2 = $('#horasimple2').data("kendoTimePicker").value();
+        DateTimeToday2 = "23:59";
+        (!(fecha2 instanceof Date)) && ($("#horasimple2").val(DateTimeToday2),
+        $("#horasimple2").data("kendoTimePicker").value(DateTimeToday2),
+        //fecha2 = GetDateTimePickerVal("horasimple2"));  //Si la fehca no es valida que la resetee hasta a fecha actual y hora actual
+        fecha2 = $('#horasimple2').data("kendoTimePicker").value());
+    }
+
+    function DefaultTime2() {
+        $('#horasimple2').data("kendoTimePicker").value('23:59')
+    }
+
+</script>
+
+@(Html.Kendo().TimePicker().Name("horasimple2").Culture("es-MX").Format("HH:mm").HtmlAttributes(new { style = "width: 115px !important; max-width: 115px !important;" }))

@@ -1,0 +1,18 @@
+﻿    @(Html.Kendo().DropDownList()
+    .Name("DDLSubflota")
+    .DataTextField("texto")
+    .DataValueField("valor")
+    .Events(e => e.Change("DDLSubflota_Change").DataBound("DDLSubflota_DataBound"))
+    .HtmlAttributes(new { style = "width:250px;" })
+    .Filter("contains")
+    .DataSource(source => source
+    .ServerFiltering(false)
+    .Custom()
+    .AutoSync(true)
+    .Transport(transport => transport
+    .Read(read =>
+    {
+        //read.Action("DDLSubflota", "Comandos");
+        read.Action("DDLSubflota", "Global");
+    })))
+    )

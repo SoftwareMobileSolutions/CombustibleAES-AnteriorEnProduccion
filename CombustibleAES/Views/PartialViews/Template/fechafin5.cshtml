@@ -1,0 +1,44 @@
+﻿<script type="text/javascript">
+    //Colocar mascara a los datatimepicker para cuando se vaya digitando no coloquen mas o menos valores de los que correpsonden
+    function MaskDTFin() {
+        $("#fecha_fin5").kendoMaskedTextBox({
+            mask: "0000/00/00 00:00:00"
+        }).removeClass("k-textbox");
+    }
+
+    //Cuando sale del foco del datetimepicker ejecutar lo siguiente
+    var DateTimeNow, fechafin;
+
+    $(document).on("focusout", "#fecha_fin5", function () {
+        ValFechaFin();
+    });
+    //Validar fecha de Fin
+    function ValFechaFin() {
+        fechafin = GetDateTimePickerVal("fecha_fin5");
+        DateTimeNow = moment().format('YYYY/MM/DD HH:mm:ss');
+        (!(fechafin instanceof Date)) && ($("#fecha_fin5").val(DateTimeNow), $("#fecha_fin5").data("kendoDateTimePicker").value(DateTimeToday), fechafin = GetDateTimePickerVal("fecha_fin5"));  //Si la fehca no es valida que la resetee hasta a fecha actual y hora actual
+    }
+
+    $(window).load(function () {
+        MaskDTFin();
+        fechafin = GetDateTimePickerVal("fecha_fin5");
+    });
+</script>
+
+@using CombustibleAES.Models;
+@{
+    LogIn Usuario;
+    Usuario = this.Session["User"] as LogIn;
+    var user = new { timezone = -6 };
+}
+
+@(Html.Kendo()
+      .DateTimePicker()
+      .Name("fecha_fin5")
+      .Format("yyyy/MM/dd HH:mm:ss")
+      .Value(DateTime.Now.AddHours(user.timezone))
+      .Min("2007/01/01 00:00:00")
+      .Culture("es-MX")
+      .HtmlAttributes(new { style = "width:180px", placeholder = "____/__/__ __:__:__" })
+)
+

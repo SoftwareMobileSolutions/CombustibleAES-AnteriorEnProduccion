@@ -1,0 +1,18 @@
+﻿@(Html.Kendo().DropDownList()
+    .Name("DDLTCombustible")
+    .DataTextField("texto")
+    .DataValueField("valor")
+    //.Events(e => e.Change("DDLTCombustible_Change").DataBound("DDLTCombustible_DataBound"))
+    .HtmlAttributes(new { style = "width:250px;" })
+    .Filter("contains")
+    .DataSource(source => source
+    .ServerFiltering(false)
+    .Custom()
+    .AutoSync(true)
+    .Transport(transport => transport
+    .Read(read =>
+    {
+        read.Action("DDLTipoCombustible", "Global");
+    })))
+)
+

@@ -1,0 +1,70 @@
+body .aciTree {
+    font-family:Verdana, Geneva, sans-serif;
+    font-size:12px;
+}
+.aciTree {
+    width:400px;
+    height:400px;
+    overflow:auto;
+    padding:10px;
+    border:1px solid #ccc;
+    float:left;
+    margin:0 20px 20px 0;
+}
+.aciTree>div {
+    font-size:11px;
+    line-height:20px;
+}
+/* for the columns >> */
+.aciTree.columns .aciTreeItem {
+    /* margin-right need to be set to icon width [.aciTree .aciTreeIcon : 20] +
+    item padding [.aciTree .aciTreeItem : 4] (+ the width of all columns, if any) */
+    margin-right:194px;
+}
+.aciTree[dir=rtl].columns .aciTreeItem{
+    /* margin-left need to be set to icon width [.aciTree .aciTreeIcon : 20] +
+    item padding [.aciTree .aciTreeItem : 4] (+ the width of all columns, if any) */
+    margin-right:0;
+    margin-left:194px;
+}
+.aciTree .aciTreeColumn0 {
+    width:100px;
+}
+.aciTree .aciTreeColumn1 {
+    width:70px;
+}
+/* << for the columns */
+.image {
+    float:left;
+    width:200px;
+    height:400px;
+    padding:10px;
+    margin:0 20px 20px 0;
+}
+.image img {
+    width:180px;
+}
+.image2 img {
+    width:480px;
+}
+.slide {
+    position:relative;
+    width:350px;
+}
+.slide>span {
+    position:absolute;
+    right:10px;
+    top:0;
+}
+.log {
+    width:400px;
+    height:400px;
+    float:left;
+    border:1px solid #ccc;
+    margin:0 20px 20px 0;
+    padding:10px;
+    overflow-y: scroll;
+}
+.log a {
+    float:right;
+}

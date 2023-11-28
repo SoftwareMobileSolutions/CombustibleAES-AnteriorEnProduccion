@@ -1,0 +1,20 @@
+﻿@(Html.Kendo().DropDownList()
+    .Name("DDLEmpleado")
+    .DataTextField("texto")
+    .DataValueField("valor")
+    .Events(e => e.Change("DDLEmpleado_Change").DataBound("DDLEmpleado_DataBound"))
+    .HtmlAttributes(new { style = "width:250px;" })
+    .Filter("contains")
+    .DataSource(source => source
+    .ServerFiltering(false)
+    .Custom()
+    .AutoSync(true)
+    .Transport(transport => transport
+    .Read(read =>
+    {
+        read.Action("DDLEmpleado", "Global");
+    })))
+)
+
+
+

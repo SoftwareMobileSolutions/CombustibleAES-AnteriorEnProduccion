@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Gritter demo for jQuery - boedesign.com</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="css/jquery.gritter.css" />
+<link rel="stylesheet" type="text/css" href="../style_global.css" />
+<script type="text/javascript" src="../jquery.min.js"></script>
+<script type="text/javascript" src="../script_global.js"></script>
+<script type="text/javascript" src="js/jquery.gritter.js"></script>
+
+</head>
+
+
+<body>
+<div id="container">
+	<a class="notificacion">notificacion</a>
+	<a id="remove-all">Remover todo</a>
+</div>
+
+<script type="text/javascript">
+
+	$(function(){
+
+		// global setting override
+		$.extend($.gritter.options, {
+		  // class_name: 'gritter-light', // for light notifications (can be added directly to $.gritter.add too)
+		   position: 'bottom-left', // possibilities: bottom-left, bottom-right, top-left, top-right
+			fade_in_speed: 100, // how fast notifications fade in (string or int)
+			fade_out_speed: 100, // how fast the notices fade out
+			time: 3000 // hang on the screen for...
+		});
+        
+		$('.notificacion').click(function(){
+			var unique_id = $.gritter.add({
+				// (string | mandatory) the heading of the notification
+				title: 'This is a notice with callbacks!',
+				// (string | mandatory) the text inside the notification
+				text: 'The callback is...',
+				image: 'http://a0.twimg.com/profile_images/59268975/jquery_avatar_bigger.png',
+				//class_name: 'gritter-light', //my-sticky-class
+				class_name: "my-sticky-class",
+				sticky: false,
+				time: '',
+				// (function | optional) function called before it opens
+				before_open: function(){
+                    if($('.gritter-item-wrapper').length == 3)
+                    {
+                        // Returning false prevents a new gritter from opening
+                        return false;
+                    }
+                },
+				// (function | optional) function called after it opens
+				after_open: function(e){
+					alert("I am called after it opens: \nI am passed the jQuery object for the created Gritter element...\n" + e);
+				},
+				// (function | optional) function called before it closes
+				before_close: function(e, manual_close){
+                    var manually = (manual_close) ? 'The "X" was clicked to close me!' : '';
+					alert("I am called before it closes: I am passed the jQuery object for the Gritter element... \n" + manually);
+				},
+				// (function | optional) function called after it closes
+				after_close: function(e, manual_close){
+                    var manually = (manual_close) ? 'The "X" was clicked to close me!' : '';
+					alert('I am called after it closes. ' + manually);
+				}
+			});
+			
+         //Para remover
+         setTimeout(function(){
+				$.gritter.remove(unique_id, {
+					fade: true,
+					speed: 'slow'
+				});
+
+			}, 600000);
+			
+			return false;
+		});
+
+		$("#remove-all").click(function(){
+			$.gritter.removeAll();
+			return false;
+		});
+
+
+
+	});
+</script>
+
+</body>
+</html>

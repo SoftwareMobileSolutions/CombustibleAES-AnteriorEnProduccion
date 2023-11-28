@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <CodeSnippet Format="1.0.0">
+    <Header>
+      <Title>Generar Mtto</Title>
+      <Author>Franklin Alvarado</Author>
+      <Description>Genera Plantilla para mtto</Description>
+      <Shortcut>GenerarMtto</Shortcut>
+    </Header>
+    <Snippet>
+      <Code Language="HTML">
+        <![CDATA[
+       <link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+  function GenerarMensaje(titulo,texto,tipo){
+  ///<summary>Genera mensajes</summary>
+  ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+  ///<param name="texto" type="string">Cuerpo del mensaje</param>
+  ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+  switch (tipo) {
+  case 1:
+  toastr.info(texto, titulo);
+  break;
+  case 2:
+  toastr.success(texto, titulo);
+  break;
+  case 3:
+  toastr.warning(texto, titulo);
+  break;
+  case 4:
+  toastr.error(texto, titulo);
+  break;
+  }
+  }
+</script>
+<div class="page-wrapper">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="font-bold no-margins">
+        Nombre Mantenimiento
+      </h3>
+      <small>Descripcion de Mantenimiento</small>
+    </div>
+    <div class="panel-body">
+      <div class="col-lg-12">
+        <div class="ibox-content" style="padding-left: 0px;">
+          <div class="row">
+            <div>
+              <span class="pull-right text-right">
+                @*controles para agregar, entre otros*@
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">
+                  Abrir Modal
+                </button>
+              </span>
+            </div>
+            <div class="m-t-sm">
+              <div class="row">
+                <div class="col-md-12">
+                  @*Aqui va el Grid*@
+                  Grid General
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+@*Empieza el modal*@
+<div class="modal inmodal" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content animated bounceInRight">
+            <div class="panel-heading">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                    <span class="sr-only">Cerrar</span>
+                </button>
+                <h3 class="modal-title">Titulo de Modal</h3>
+                <small class="font-bold">Descipcion de modal</small>
+            </div>
+            <div class="modal-body">
+                <div class="panel-body">
+                    <p>
+                        <strong>Contenido de Modal</strong>
+
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-white" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+@*Termina el modal*@
+ ]]>
+      </Code>
+    </Snippet>
+  </CodeSnippet>
+</CodeSnippets>

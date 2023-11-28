@@ -1,0 +1,756 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Combustible > Nuevo Vale";
+}
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/style.min.css" rel="stylesheet" />
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    var empresaid = 0; // Empresa seleccionada.
+    var valeid = 0; // Vale Generado para imprimir.
+    var rentadoid = 0; // Valor que determina si es un equipo rentado.
+    var tipocostoid = 1; // 1 = Numero orden, 2 = PEP.
+    var boundTrigger = null;
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    $(document).ready(function () {
+        $("#chkCC").show();
+        $("#lblCC").show();
+        
+        ajustarAltoTabla();
+            $('#txtNumOrden').prop("disabled", true);
+            $("#txtPEP").val("");
+            $("#txtPEP").attr("disabled", true);
+        $.post("../Global/ObtenerFecha",
+            {},
+            function (data) {
+                var respuesta = data;
+                if (respuesta.codigo < 0) {
+                    GenerarMensaje("Aviso", "Ha ocurrido un error al obtener la fecha actual, intente nuevamente", 4);
+                } else {
+                    $('#txtFecha').val(respuesta.fecha);
+                }
+            }
+        );
+
+        $("#txtPlaca, #txtAlias, #txtCCosto, #txtNumOrden, #txtNumEmpleado, #txtEmpleado").keypress(function (e) {
+            if (e.keyCode == 13) {
+                btn_Ingresar_Onclick();
+            }
+        });
+
+        function cCosto_Focusout(e) {
+            //    if (e.val() != "" && tipocostoid == 1) {
+
+            //        var validCentroCosto = $("#chkCC").prop("checked") ? /^([0-9]{10})$/ : /SV\w+([0-9]{7}$)$/;
+            //        if (validCentroCosto.test(e.val())) {
+            //            ccHide();
+            //        }
+            //        else {
+            //            ccShow();
+            //        }
+            //    }
+            //    else {
+            //        ccHide();
+            //    }
+        }
+
+        //$("#txtCCosto").focusout(function () {
+        //    cCosto_Focusout($(this));
+        //});
+
+        $("#chkCC").change(function () {
+            //cCosto_Focusout($("#txtCCosto"));
+            //console.log("entre")
+            if ($("#chkCC").prop("checked")) {
+            $("#txtPEP").attr("disabled", false);
+                $("#txtCCosto").attr("disabled", true);
+                $("#txtPEP").focus();
+            } else {
+                $("#txtPEP").attr("disabled", true);
+                $("#txtCCosto").attr("disabled", false);
+                $("#txtCCosto").focus();
+            }
+        })
+
+    });
+       
+    function ccHide() {
+        $("#txtCCosto").animate({ borderColor: "#c5c5c5", backgroundColor: "#ffffff" }, 100);
+        $("#ccControl").fadeOut();
+    }
+
+    function ccShow() {
+       // var example = $("#chkCC").prop("checked") ? "2043368512" : "SV12245127";
+        //$("#ccControl").remove();
+        //$("#txtCCosto").after("<span id='ccControl' class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' style='margin-left: 5px' data-for='txtCCosto'><span class='k-icon k-i-warning' style='color: red'></span>Debe ingresar un centro de costo con formato válido. Ejemplo: " + example + ".</span>").animate();
+        //$("#txtCCosto").animate({ borderColor: "#ff0000", backgroundColor: "#fff1f0" }, 100);
+        //$("#ccControl").fadeIn();
+    }
+
+    function EmpresaList_onChange() {
+        empresaid = $("#EmpresaList").data("kendoDropDownList").value();
+        boundTrigger = "Empresa";
+        $("#txtPlaca").val("");
+        $("#txtAlias").val("");
+        $('#EquipoList').data("kendoDropDownList").dataSource.read();
+      //  $("#chkCC").prop("checked", false);
+      //  $("#chkCC").show();
+        $("#lblCC").show();
+
+        //if (empresaid == 5 || empresaid == 7) {
+        //    $("#chkCC").prop("checked", false);
+        //    $("#chkCC").show();
+        //    $("#lblCC").show();
+        //}
+        //else {
+        //    $("#chkCC").hide();
+        //    $("#lblCC").hide();
+        //}
+
+    }
+
+    function GetEmpresaID() {
+        return { EmpresaID: empresaid }
+    }
+
+    function GetValeID() {
+        return { NumVale: valeid }
+    }
+
+    function EquipoList_Change() {
+        var imobileid = $('#EquipoList').data("kendoDropDownList").value();
+        if (imobileid == 0) {
+            $('#txtAlias').val("");
+            $('#txtPlaca').val("");
+        } else {
+            $('#txtAlias').val($('#EquipoList').data("kendoDropDownList").text());
+            $.post("../Global/ObtenerPlaca", {
+                mobileid: imobileid
+            },
+                function (data) {
+                    var respuesta = data;
+                    if (respuesta.codigo < 0) {
+                        GenerarMensaje("Aviso", "Ha ocurrido un error al obtener placa del vehículo, intente nuevamente", 4);
+                    } else {
+                        $('#txtPlaca').val(respuesta.placa);
+                    }
+                });
+        }
+    }
+
+    function EquipoList_DataBound() {
+        if (boundTrigger != null && boundTrigger == "Empresa") {
+            $('#EquipoList').data("kendoDropDownList").value(0);
+        }
+        else {
+            //$('#EquipoList').data("kendoDropDownList").select(0);
+        }
+        boundTrigger = null;
+    }
+
+    function ultimaValidacion(_centroCosto, _numOrden, _pep, _tipoCombustibleID, _numEmpleado, _nombreEmpleado, _saldoVale) {
+      //  var validCentroCosto = $("#chkCC").prop("checked") ? /^([0-9]{10})$/ : /SV\w+([0-9]{7}$)$/;
+        var LongiCentroCosto = true; // Variable para corroborar la longitud del centro de costo.
+        if (_centroCosto.length > 10) {
+
+            LongiCentroCosto = false;
+        }
+        var validacionRealizada = 0;
+        switch (tipocostoid) {
+            case 1: case "1": //Número de orden
+                //if (_centroCosto != "") {
+                //    //if (validCentroCosto.test(_centroCosto) && LongiCentroCosto) {
+                //    //    validacionRealizada = 1;
+                //    //    //if (_numOrden != "") {
+
+                //    //    //}
+                //    //    //else {
+                //    //    //    GenerarMensaje("Aviso", "Por favor ingrese el número de orden.", 3);
+                //    //    //}
+                //    //}
+                //    //else {
+                //    //    GenerarMensaje("Aviso", $("#chkCC").prop("checked") ? "Por favor ingrese un centro de costo válido con el nuevo formato." : "Por favor ingrese un centro de costo válido (Formato 'SV' seguido de 8 digitos. Ejemplo: 'SV42517968').", 3);
+                //    //}
+                //    validacionRealizada = 1;
+                //}
+                //else {
+                //    GenerarMensaje("Aviso", "Por favor ingrese el centro de costo.", 3);
+                //}
+                //break;
+                validacionRealizada = 1;
+            case 2: case "2": //PEP
+                validacionRealizada = 1;
+                //if (_pep != "") {
+                //    validacionRealizada = 1;
+                //}
+                //else {
+                //    GenerarMensaje("Aviso", "Por favor ingrese el PEP.", 3);
+                //}
+                break;
+        }
+        if (validacionRealizada == 1) {
+            if (_tipoCombustibleID > 0) {
+                //if (_numEmpleado != "") {
+                //    if (_nombreEmpleado != "") {
+                        //if (_saldoVale != "") {
+                        //if (_saldoVale > 0) {
+                        if (_numOrden.length > 4) {
+                            GenerarMensaje("Aviso", "Ha sobrepasado el limite de caracteres del número de orden, se permiten máximo 4 caracteres.  ", 3);
+                        } else {
+                            return true;
+                        }
+
+                        /*}
+                        else {
+                            _saldo = "1000"; // Hasta que se implemente los saldos en los vales no se realizará ninguna validación al respecto.
+                            //GenerarMensaje("Aviso", "El saldo del vale debe ser mayor a $0.00.", 3);
+                        }
+                    }
+                    else {
+                        _saldo = "1000"; // Hasta que se implemente los saldos en los vales no se realizará ninguna validación al respecto.
+                        //GenerarMensaje("Aviso", "Por favor ingrese el saldo del vale de combustible.", 3);
+                    }*/
+                //    }
+                //    else {
+                //        GenerarMensaje("Aviso", "Por favor ingrese el nombre del empleado.", 3);
+                //    }
+                //}
+                //else {
+                //    GenerarMensaje("Aviso", "Por favor ingrese el número de empleado.", 3);
+                //}
+            }
+            else {
+                GenerarMensaje("Aviso", "Por favor selecione un tipo de combustible.", 3);
+            }
+        }
+
+
+        return false;
+    }
+
+    function btn_Ingresar_Onclick() {
+        //Almacenamiento de datos
+        var _numeroEquipo = $('#EquipoList').data("kendoDropDownList").value();
+        var _placa = $('#txtPlaca').val();
+        var _alias = $('#txtAlias').val();
+        var _centroCosto = $.trim($('#txtCCosto').val());
+        var _numOrden = $('#txtNumOrden').val();
+        //var _pep = $('#PEPList').val();
+        var _pep = $.trim($("#txtPEP").val());
+        var _tipoCombustibleID = $('#TipoCombustibleList').data("kendoDropDownList").value();
+        var _numEmpleado = $('#txtNumEmpleado').val();
+        var _nombreEmpleado = $('#txtEmpleado').val();
+        var datosValidados = false;
+        var _saldoVale = /*$("#txtSaldo").val()*/1000;
+
+
+
+        var chkOtro = $("#chkCC").is(":checked");
+        var empList = $('#EmpresaList').data("kendoDropDownList").value();
+        
+
+        //Validando Centro de costos
+        var Opex_Val = new RegExp(/([SV0-9$]){10}/g);
+
+        //Validando PEP
+        var Capex_1 = new RegExp(/^(GSV)(([0-9]){2})?\.([0-9]{2})\.([0-9]{4})\.([0-9]{2})\.([0-9]{2})(.([0-9]){2})?$/); //GSV66.20.0001.01.05.08 (código utilizado en las generadoras)                           | Nejapa, aes soluciones, bosforo, aes next, cusca. solar
+        var Capex_2_caess = new RegExp(/^(DSV)(([10]){2})?\.([0-9]{2})\.([0-9]{4})\.([0-9]{2})$/); //(Código utilizado únicamente en las distribuidoras, que presenta variación en los primeros campos) | DSV10 – CAESS
+        var Capex_2_clesa = new RegExp(/^(DSV)(([40]){2})?\.([0-9]{2})\.([0-9]{4})\.([0-9]{2})$/); //(Código utilizado únicamente en las distribuidoras, que presenta variación en los primeros campos) | DSV20 – CLESA
+        var Capex_2_deusem = new RegExp(/^(DSV)(([20]){2})?\.([0-9]{2})\.([0-9]{4})\.([0-9]{2})$/); //(Código utilizado únicamente en las distribuidoras, que presenta variación en los primeros campos) | DSV20 – DEUSEM
+        var Capex_2_eeo = new RegExp(/^(DSV)(([30]){2})?\.([0-9]{2})\.([0-9]{4})\.([0-9]{2})$/); //(Código utilizado únicamente en las distribuidoras, que presenta variación en los primeros campos) | DSV30 – EEO
+        if (empList === "9") { //Nuevo Negocio libre de caracteres
+            if (_pep === "" && chkOtro) {
+                GenerarMensaje("Aviso", "El código PEP no puede quedar vacío", 3);
+                return false;
+            }
+            if (_centroCosto === "" && !chkOtro) {
+                GenerarMensaje("Aviso", "El código de Centro de Costos no puede quedar vacío", 3);
+                return false;
+            }
+        } else {
+            if (chkOtro) {//PEP
+
+                if (empList === "5" || empList === "6" || empList === "7" || empList === "8" || empList === "10") {
+                    if (!Capex_1.test(_pep)) {
+                        GenerarMensaje("Aviso", "Por favor ingrese el código correcto para la generadora seleccionada", 3);
+                        return false;
+                    }
+                } else { // El resto de empresas aplicar
+
+
+                    if ((empList === "1" || empList === "2" || empList === "3" || empList === "4") && (!Capex_2_caess.test(_pep) && !Capex_2_clesa.test(_pep) && !Capex_2_deusem.test(_pep) && !Capex_2_eeo.test(_pep))) {
+                        GenerarMensaje("Aviso", "Por favor ingrese el formato correcto (DSV40.00.0000.00, DSV30.00.0000.00, DSV20.00.0000.00, DSV10.00.0000.00) para la distribuidora CAESS seleccionada", 3);
+                        return false;
+                    }
+                    /*if ((empList === "1" || empList === "2" || empList === "3" || empList === "4") && !Capex_2_caess.test(_pep)) {
+                        GenerarMensaje("Aviso", "Por favor ingrese el formato correcto (DSV10.00.0000.00) para la distribuidora CAESS seleccionada", 3);
+                        return false;
+                    }
+                    if ((empList === "1" || empList === "2" || empList === "3" || empList === "4") && !Capex_2_clesa.test(_pep)) {
+                        GenerarMensaje("Aviso", "Por favor ingrese el formato correcto (DSV40.00.0000.00)  para la distribuidora CLESA seleccionada", 3);
+                        return false;
+                    }
+                    if ((empList === "1" || empList === "2" || empList === "3" || empList === "4") && !Capex_2_eeo.test(_pep)) {
+                        GenerarMensaje("Aviso", "Por favor ingrese el formato correcto (DSV30.00.0000.00)  para la distribuidora EEO seleccionada", 3);
+                        return false;
+                    }
+                    if ((empList === "1" || empList === "2" || empList === "3" || empList === "4") && !Capex_2_deusem.test(_pep)) {
+                        GenerarMensaje("Aviso", "Por favor ingrese el formato correcto (DSV20.00.0000.00)  para la distribuidora DEUSEM seleccionada", 3);
+                        return false;
+                    }
+                    */
+                   /* if (!Capex_2.test(_pep)) {
+                        GenerarMensaje("Aviso", "Por favor ingrese el código correcto para la distribuidora seleccionada", 3);
+                        return false;
+                    }*/
+                }
+
+            } else {//Centro de Costo
+                if (!Opex_Val.test(_centroCosto)) {
+                    GenerarMensaje("Aviso", "Por favor ingrese el código correcto para el Centro de Costos (10 caracteres)", 3);
+                    return false;
+                }
+            }
+        }  
+
+        //Se valida que el formulario cumpla con los estándares solicitados
+        if (empresaid > 0) {
+            if (rentadoid == 1) {
+                if (_placa != "") {
+                    if (_alias != "") {
+                        datosValidados = ultimaValidacion(_centroCosto, _numOrden, _pep, _tipoCombustibleID, _numEmpleado, _nombreEmpleado, _saldoVale);
+                    }
+                    else {
+                        datosValidados = GenerarMensaje("Aviso", "Por favor ingrese el alias del equipo rentado ó no Kontrol.", 3);
+                    }
+                }
+                else {
+                    GenerarMensaje("Aviso", "Por favor ingrese el número de placa del equipo rentado ó no Kontrol.", 3);
+                }
+            }
+            else {
+                if (_numeroEquipo > 0) {    
+                    if (_placa != "") {
+                        if (_alias != "") {
+                            datosValidados = ultimaValidacion(_centroCosto, _numOrden, _pep, _tipoCombustibleID, _numEmpleado, _nombreEmpleado, _saldoVale);
+                        }
+                        else {
+                            GenerarMensaje("Aviso", "Por favor seleccione un número de equipo.", 3);
+                        }
+                    } else {
+                        GenerarMensaje("Aviso", "Por favor seleccione un número de equipo.", 3);
+                    }
+                }
+                else {
+                    GenerarMensaje("Aviso", "Por favor seleccione un número de equipo.", 3);
+                }
+            }
+
+        }
+        else {
+            GenerarMensaje("Aviso", "Por favor seleccione una empresa.", 3);
+        }
+
+        if (datosValidados == true) {
+            $.post("../Vale/InsertarVale", {
+                Companyid: empresaid, Rentado: rentadoid, TipoCosto: tipocostoid, TipoCombustibleID: _tipoCombustibleID,
+                FechaGeneracion: $('#txtFecha').val(), NombreEmpleado: _nombreEmpleado,
+                NumEmpleado: _numEmpleado, CentroCosto: _centroCosto, NumOrden: _numOrden,
+                mobileid: _numeroEquipo, Placa: _placa, Alias: _alias,
+                Inversion: _pep, Saldo: _saldoVale
+            },
+                function (data) {
+                    var respuesta = data;
+                    if (respuesta.codigo == -1) { //El vehiculo seleccionado tiene muchos vales generados
+                        //GenerarMensaje("Aviso", "Ha ocurrido un error al insertar el vale.<br/>" + respuesta.mensaje, 4);
+                        GenerarMensaje("Aviso", respuesta.mensaje, 4);
+                    }
+                    else if (respuesta.codigo == -2) { //El PEP ingresado no se encuentra dentro de la base de datos
+                        GenerarMensaje("Aviso", respuesta.mensaje, 4);
+                        $("#txtPEP").focus();
+                    }
+                    else if (respuesta.codigo == -3) { //Error
+                        //GenerarMensaje("Aviso", respuesta.mensaje, 4);
+                        GenerarMensaje("Aviso", "Ocurrió un error. Comuníquese con soporte técnico.", 4);
+                    }
+                    else {
+                        GenerarMensaje("¡Éxito!", respuesta.mensaje, 2);
+                        valeid = respuesta.codigo;
+                        $('#GridValeImprimir').data('kendoGrid').dataSource.read();
+                        LimpiarCampos();
+                    }
+                });
+        }
+    }
+
+    function LimpiarCampos() {
+        $('#txtEmpleado').val("");
+        $('#txtNumEmpleado').val("");
+        $('#TipoCombustibleList').data("kendoDropDownList").select(0);
+        //$('#PEPList').data("kendoDropDownList").select(0);
+        // $('#chkPEP').prop('checked', false);
+        $('#txtNumOrden').val("");
+        $('#txtCCosto').val("");
+        $('#txtAlias').val("");
+        $('#txtPlaca').val("");
+        $('#txtSaldo').val("");
+        $('#chkRentado').prop('checked', false);
+        $('#EmpresaList').data("kendoDropDownList").select(0);
+        $('#EquipoList').removeAttr("disabled");
+        $('#EquipoList').data("kendoDropDownList").value(0)
+        $("#txtPEP").val("");
+        //$("#chkCC").prop("checked", false);
+        empresaid = 0;
+        rentadoid = 0;
+        tipocostoid = 1;
+
+    }
+
+    function chkRentado_onclick() {
+        if ($('#chkRentado').prop('checked')) {
+
+            $('#txtPlaca').prop("disabled", false);
+            $('#txtAlias').prop("disabled", false);
+            $('#txtPlaca').val("");
+            $('#txtAlias').val("");
+            $("#EquipoList").data("kendoDropDownList").enable(false);
+            $('#EquipoList').data("kendoDropDownList").select(0);
+            rentadoid = 1;
+        } else {
+            $("#EquipoList").data("kendoDropDownList").enable();
+            $('#txtPlaca').prop("disabled", true);
+            $('#txtAlias').prop("disabled", true);
+            rentadoid = 0;
+        }
+    }
+
+    //function chkPEP_onclick() {
+    //    if ($('#chkPEP').prop('checked')) {
+    //        $('#txtNumOrden').prop("disabled", true);
+    //        $("#txtCCosto").prop("disabled", true);
+    //        $('#txtNumOrden').val("");
+    //        $('#txtCCosto').val("");
+    //        //$("#PEPList").data("kendoDropDownList").enable(true);
+    //        //$('#PEPList').data("kendoDropDownList").select(0);
+    //        $("#txtPEP").val("");
+    //        $("#txtPEP").removeAttr("disabled");
+    //        ccHide();
+    //        tipocostoid = 2;
+    //    } else {
+    //        $('#txtNumOrden').prop("disabled", false);
+    //        $("#txtPEP").val("");
+    //        $("#txtPEP").attr("disabled", true);
+    //        $('#txtCCosto').prop("disabled", false);
+    //        //$("#PEPList").data("kendoDropDownList").enable(false);
+    //        $("#txtPEP").val("");
+    //        $("#txtPEP").attr("disabled", true);
+    //        $('#txtNumOrden').val("");
+    //        $('#txtCCosto').val("");
+    //        tipocostoid = 1;
+    //    }
+    //}
+
+    function btn_Imprimir_Onclick() {
+        if (valeid === 0) {
+            GenerarMensaje("Aviso", "Debe generar el vale primero.", 3);
+        } else {
+            var uv = "../Vale/ValeImprimir?vale=" + valeid;
+            window.open(uv, '_blank');
+        }
+    }
+
+
+</script>
+
+<div class="page-wrapper">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Ingresando nuevo vale de combustible
+            </h3>
+            <small>Desde este módulo puede generar nuevos vales de combustible</small>
+        </div>
+        <div class="panel-body">
+            <div class="col-lg-12">
+                <div class="ibox-content" style="padding-left: 0px;">
+                    <div class="row">
+                        <div class="m-t-sm">
+                            <div class="row">
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Empresa:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        @EmpresaList()
+
+                                    </div>
+                                </div>
+
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Número de Equipo:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        @EquipoList()
+                                        &nbsp;&nbsp;<input type="checkbox" id="chkRentado" value="false" onclick="chkRentado_onclick();" />  <label for="chkRentado" id="lblRentado">Rentado ó No Kontrol</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Placa:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtPlaca" disabled class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Alias:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtAlias" disabled class="txtTab k-textbox marginFivePx">
+                                       &nbsp;&nbsp;<input type="checkbox" id="chkCC" value="false" hidden />  <label for="chkCC" id="lblCC" hidden>Otro</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Centro de Costo:</label>
+                                    </div>
+                                    <div class="col-lg-8" id="CCostoContenedor">
+                                        <input type="text" id="txtCCosto" class="k-textbox">
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Número de Orden:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtNumOrden" class="txtTab k-textbox marginFivePx">
+                                      @*  &nbsp;&nbsp;<input type="checkbox" id="chkPEP" value="false" onclick="chkPEP_onclick();" />  <label for="chkPEP" id="lblPEP">Otros</label>*@
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">PEP:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtPEP" disabled class="txtTab k-textbox marginFivePx">
+                                        <!-- PEPList()-->
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Tipo Combustible:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        @TipoCombustibleList()
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">No. Empleado:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtNumEmpleado" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Empleado:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtEmpleado" class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                                <!-- Por el momento se ocular todo el div de saldo, cuandos se implemente el meotodo de tarjetas se debe visualizar nuevamente.-->
+                                <div class="form-group" style="display:none">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Saldo del vale $:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="number" id="txtSaldo" value="5000" class="txtTab k-textbox marginFivePx" step="0.01">
+                                    </div>
+                                </div>
+
+
+                                <div class="form-group">
+                                    <div class="col-lg-4">
+                                        <label class="control-label">Fecha:</label>
+                                    </div>
+                                    <div class="col-lg-8">
+                                        <input type="text" id="txtFecha" disabled class="txtTab k-textbox marginFivePx">
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="btn_Ingresar_Onclick();">Ingresar Vale</button>
+                                <button type="button" class="btn btn-primary" onclick="btn_Imprimir_Onclick();">Imprimir</button>
+                            </div>
+                            <div>
+                                @GridValeImprimir()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@helper EmpresaList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("EmpresaList")
+        .DataTextField("empresa")
+        .DataValueField("empresaid")
+        .Events(e =>
+        {
+            e.Change("EmpresaList_onChange");
+        })
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ComboEmpresas", "Global");
+        })))
+    )
+}
+
+@helper EquipoList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("EquipoList")
+        .DataTextField("name")
+        .DataValueField("mobileid")
+        .Events(e => e.Change("EquipoList_Change").DataBound("EquipoList_DataBound"))
+        .HtmlAttributes(new { style = "width:250px;" })
+        .Filter("contains")
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ComboEquipos", "Global").Data("GetEmpresaID");
+        })))
+    )
+}
+
+@helper TipoCombustibleList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("TipoCombustibleList")
+        .DataTextField("nombre")
+        .DataValueField("combustibleid")
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ComboCombustible", "Global");
+        })))
+    )
+}
+
+@helper PEPList()
+{
+    @(Html.Kendo().DropDownList()
+        .Name("PEPList")
+        .Enable(false)
+        .DataTextField("Pep")
+        .DataValueField("Pep")
+        .Filter("contains")
+        /*
+        .Events(e =>
+        {
+            e.Change("EmpresaList_onChange");
+        })
+        */
+        .DataSource(source => source
+        .ServerFiltering(false)
+        .Custom()
+        .AutoSync(true)
+        .Transport(transport => transport
+        .Read(read =>
+        {
+            read.Action("ObtenerPEPList", "Vale");
+        })))
+    )
+}
+
+@helper GridValeImprimir()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.ValeMostrar>()
+        .Name("GridValeImprimir")
+        .AutoBind(true)
+            .Columns(c =>
+            {
+                c.Bound(col => col.NumeroVale).Title("No. vale").Filterable(false).Sortable(false);
+                c.Bound(col => col.Alias).Title("Vehículo");
+                c.Bound(col => col.Placa).Title("Placa");
+                c.Bound(col => col.Empresa).Title("Empresa");
+                c.Bound(col => col.FechaGeneracion).Title("Fecha");
+                c.Bound(col => col.NoEmpleado).Title("Número Empleado");
+                c.Bound(col => col.Empleado).Title("Empleado");
+                c.Bound(col => col.TipoCombustible).Title("Tipo Combustible");
+                c.Bound(col => col.Saldo).Title("Saldo del vale").Visible(false);
+            })
+        .Mobile(MobileMode.Auto)
+        //.Selectable(selectable => selectable.Mode(GridSelectionMode.Single).Type(GridSelectionType.Row))
+        .Resizable(resize => resize.Columns(false))
+
+        //.ColumnMenu()
+        .Scrollable(s => s.Enabled(true))
+        //.Sortable(s => s.Enabled(false))
+        //.Filterable(f => f.Enabled(false))
+        .HtmlAttributes(new { style = "height:100%;" })
+        .DataSource(ds => ds.Ajax().PageSize(100).ServerOperation(false)
+            .Read(r => r.Action("ObtenerValeMostrar", "Vale").Data("GetValeID"))
+        )
+    )
+}

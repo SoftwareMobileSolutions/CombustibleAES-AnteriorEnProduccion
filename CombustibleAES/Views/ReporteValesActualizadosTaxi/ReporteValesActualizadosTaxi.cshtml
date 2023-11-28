@@ -1,0 +1,289 @@
+﻿@{
+    ViewBag.Title = "Combustible AES | Taxi > Vales Actualizados";
+}
+
+<link href="~/Content/plantilla/css/plugins/toastr/toastr.min.css" rel="stylesheet" />
+<link href="../Content/plantilla/css/animate.css" rel="stylesheet" />
+
+<script src="~/Content/plantilla/js/plugins/toastr/toastr.min.js"></script>
+<script type="text/javascript">
+    data = [];
+
+    function GenerarMensaje(titulo, texto, tipo) {
+        ///<summary>Genera mensajes</summary>
+        ///<param name="titulo" type="string">Titulo que lleva el mensaje</param>
+        ///<param name="texto" type="string">Cuerpo del mensaje</param>
+        ///<param name="tipo" type="number">1-Informacion, 2-Exito, 3-Advertencia, 4-Error</param>
+        switch (tipo) {
+            case 1:
+                toastr.info(texto, titulo);
+                break;
+            case 2:
+                toastr.success(texto, titulo);
+                break;
+            case 3:
+                toastr.warning(texto, titulo);
+                break;
+            case 4:
+                toastr.error(texto, titulo);
+                break;
+        }
+    }
+
+    function fechasimple1_Change() {
+        //
+    }
+
+    function fechasimple2_Change() {
+        //
+    }
+
+    //Se encarga de ajustar la tabla para rellenar la pantalla
+    function ajustarAltoTabla() {
+        pageSize = $(".panel-body").height();
+        doc = $(document).height() - 189;
+        contentSize = $(".k-grid-content").height();
+        if (pageSize < doc) {
+            newSize = doc - pageSize;
+            $(".k-grid-content").height(contentSize + newSize);
+        }
+    }
+
+    function GenerarReporte() {
+        var _fechaI = $("#fechasimple1").data("kendoDatePicker").value();
+        var _fechaF = $("#fechasimple2").data("kendoDatePicker").value();
+        if (_fechaI != null) {
+            if (_fechaF != null) {
+                var f1 = moment($("#fechasimple1").data("kendoDatePicker").value());
+                var f2 = moment($("#fechasimple2").data("kendoDatePicker").value());
+                if (f2.isAfter(f1) == true || f2.isSame(f1)) {
+                    $("#GridValesTaxiCF").data("kendoGrid").dataSource.read();
+                }
+                else GenerarMensaje("Aviso", "La fecha de inicio debe ser anterior a la fecha fin.", 3);
+            }
+            else GenerarMensaje("Aviso", "Por favor seleccione la fecha fin.")
+        }
+        else GenerarMensaje("Aviso", "Por favor seleccione la fecha de inicio.", 3);
+    }
+
+    function GridData() {
+        return {
+            fechaInicio: moment($("#fechasimple1").data("kendoDatePicker").value()).format("YYYYMMDD"),
+            fechaFin: moment($("#fechasimple2").data("kendoDatePicker").value()).format("YYYYMMDD"),
+        }
+    }
+
+    function GridValesTaxiCF_Change(e) {
+        var rows = e.sender.select();
+        data = [];
+        var g = $("#GridValesTaxiCF").data("kendoGrid");
+        $.each($("#GridValesTaxiCF tbody tr"), function (i, e) {
+            $("tr[data-uid=" + $(e)[0].dataset.uid + "] td:first-child input").prop("checked", false);
+        });
+        rows.each(function () {
+            data.push(g.dataItem(this).IdVale);
+            $("tr[data-uid=" + $(this)[0].dataset.uid + "] td:first-child input").prop("checked", true);
+        });
+        var ca = $("#checkAll");
+        if (g.select().length == g.dataSource.data().length) ca.prop("checked", true);
+        else ca.prop("checked", false);
+    }
+
+    function GridValesTaxiCF_DataBound(e) {
+        var cantRegistros = $("#GridValesTaxiCF").data("kendoGrid").dataSource.data().length;
+        if (cantRegistros > 0) {
+            $("#GridValesTaxiCF").data("kendoGrid").clearSelection();
+            LimpiarControlesCF();
+            $("#ControlesCF").show();
+        }
+        else {
+            $("#ControlesCF").hide();
+        }
+
+        $("#GridValesTaxiCF tbody tr input").click(function () {
+            checkRow($(this));
+        });
+    }
+
+    function checkRow(e) {
+        if (e.prop("checked")) {
+            e.parent().parent().parent().addClass("k-alt k-state-selected");
+        }
+        else {
+            e.parent().parent().parent().removeClass("k-alt k-state-selected");
+        }
+        var GData = new Object();
+        GData.sender = $("#GridValesTaxiCF").data("kendoGrid");
+        GridValesTaxiCF_Change(GData);
+    }
+
+    function ActualizarCFTaxi() {
+        var _fechaCF = $("#fechasimple5").data("kendoDatePicker").value();
+        var _CF = $("#txtCreditoFiscal").val();
+
+        if (data.length > 0) {
+            if (_fechaCF != null) {
+                if (_CF != "") {
+                    $.post(
+                        "../ReporteValesActualizadosTaxi/ActualizarCreditoFiscal",
+                        { idVales: data, fechaCF: moment($("#fechasimple5").data("kendoDatePicker").value()).format("YYYYMMDD"), CF: $("#txtCreditoFiscal").val() }
+                        ,
+                        function (e) {
+                            if (e.codigo == 1) {
+                                GenerarMensaje("Aviso", e.mensaje, 2);
+                                $("#GridValesTaxiCF").data("kendoGrid").dataSource.read();
+                            }
+                            else GenerarMensaje("Aviso", "Error al actualizar el crédito fiscal. " + e.mensaje, 4);
+                        }
+                    );
+                }
+                else GenerarMensaje("Aviso", "Por favor ingrese el número de crédito fiscal.", 3);
+            }
+            else GenerarMensaje("Aviso", "Por favor ingrese la fecha de ingreso de crédito fiscal.", 3);
+        }
+        else GenerarMensaje("Aviso", "Para actualizar el número de factura elija al menos un vale de taxi de la tabla de registros.", 3);
+    }
+
+    function LimpiarControlesCF() {
+        $("#checkAll").prop("checked", false);
+        $("#fechasimple5").data("kendoDatePicker").value("");
+        $("#txtCreditoFiscal").val("");
+    }
+
+    $(document).ready(function () {
+        ajustarAltoTabla();
+        $("#fechasimple1").val("");
+        $("#fechasimple2").val("");
+        $("#fechasimple5").val("");
+
+        $("#checkAll").click(function () {
+            var o = $("#checkAll");
+            var g = $("#GridValesTaxiCF").data("kendoGrid");
+            if (o.prop("checked")) g.select("tr");
+            else g.clearSelection();
+        });
+    });
+</script>
+<style>
+    tr, td {
+        border: 1px solid white;
+        padding: 5px;
+        text-align: left;
+    }
+
+    .disable-select {
+        user-select: none; /* supported by Chrome and Opera */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+    }
+</style>
+<div class="page-wrapper">
+    <div class="panel panel-default" style="height:100%;">
+        <div class="panel-heading">
+            <h3 class="font-bold no-margins">
+                Reporte Vales Actualizados Taxi
+            </h3>
+            <small>Desde éste módulo podrá agregar el número de crédito fiscal a aquellos vales de taxi que no lo tengan.</small>
+        </div>
+        <div class="panel-body" style="height: 100%;">
+            <div class="col-lg-12" style="height: 100%;">
+                <div class="row" style="height: 100%; margin-bottom: 5px; margin-top: -10px;">
+                    <div class="col-lg-12">
+                        <center>
+                            <table style="border-collapse: collapse;">
+                                <tr>
+                                    <td>
+                                        <label style="padding-top: 10px;">Fecha Inicio:&nbsp;</label>@RenderPage("~/Views/PartialViews/Template/fechasimple1.cshtml")
+                                        <label style="padding-top: 10px;">Fecha Fin:&nbsp;</label>@RenderPage("~/Views/PartialViews/Template/fechasimple2.cshtml")
+                                    </td>
+                                    <td><button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="GenerarReporte()">Generar reporte</button></td>
+                                </tr>
+                            </table>
+                        </center>
+                    </div>
+                </div>
+                <div class="row" style="height: 100%;">
+                    <div class="m-t-sm" style="height: 100%">
+                        <div class="row" style="height: 100%;">
+                            <div class="col-md-12" style="height: 100%; margin-top: 10px;">
+                                <table id="ControlesCF" hidden>
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" id="checkAll">
+                                            <label for="checkAll" class="disable-select">Seleccionar Todos</label>
+                                            &nbsp;&nbsp;&nbsp;
+                                            <label>Fecha Crédito Fiscal:</label>&nbsp;@RenderPage("~/Views/PartialViews/Template/fechasimple5.cshtml")
+                                            &nbsp;&nbsp;&nbsp;
+                                        </td>
+                                        <td>
+                                            <label>Número Crédito Fiscal:</label>
+                                            <input type="text" id="txtCreditoFiscal" class="k-textbox marginFivePx" />
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="ActualizarCFTaxi()">Actualizar Número Factura</button>
+                                        </td>
+                                    </tr>
+                                </table>
+                                @GridValesTaxiCF()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@helper GridValesTaxiCF()
+{
+    @(Html.Kendo().Grid<CombustibleAES.Models.ReporteValesActualizadosTaxi>()
+        .Name("GridValesTaxiCF")
+        .AutoBind(false)
+        .Columns(col =>
+        {
+            col.Bound(c => c.IdVale).Title("Seleccionar").Width(100).ClientTemplate("<center><input type='checkbox'></center>").Filterable(false);
+            col.Bound(c => c.IdVale).Title("No. Vale").Width(200);
+            col.Bound(c => c.Area).Title("Área").Width(200);
+            col.Bound(c => c.Empresa).Title("Empresa").Width(200);
+            col.Bound(c => c.Pasajero).Title("Pasajero").Width(200);
+            col.Bound(c => c.Origen).Title("Origen").Width(200);
+            col.Bound(c => c.Destino).Title("Destino").Width(200);
+            col.Bound(c => c.CentroCosto).Title("Centro Costo").Width(200);
+            col.Bound(c => c.Orden).Title("Orden").Width(200);
+            col.Bound(c => c.Monto).Title("Monto").Width(200);
+            col.Bound(c => c.Usuario).Title("Usuario").Width(200);
+        })
+        .Filterable(f => f
+            .Mode(GridFilterMode.Row)
+            .Operators(ops => ops.
+                ForString(str => str
+                    .Clear()
+                    .Contains("Contiene")
+                    .IsEqualTo("Es igual a")
+                )
+            )
+        )
+        .Scrollable()
+        .Selectable(s => s.Mode(GridSelectionMode.Multiple))
+        .PersistSelection(true)
+        .Mobile(MobileMode.Auto)
+        .Sortable()
+        .Pageable(x =>
+        {
+            x.Enabled(true);
+            x.PreviousNext(true);
+            x.PageSizes(true);
+            x.Info(true);
+            x.Input(true);
+            x.Numeric(false);
+            x.PageSizes(new List<object> { 20, 30, 40, 50, 100 }).Refresh(false);
+
+        })
+        .NoRecords(nr => nr.Template("<h1 style='   font-color: gray;'>No hay registros para mostrar.</h1>"))
+        .Scrollable()
+        .DataSource(ds => ds.Ajax().PageSize(100).Read(r => r.Action("ObtenerValesTaxiCF", "ReporteValesActualizadosTaxi").Data("GridData")))
+        .Events(e => e.DataBound("GridValesTaxiCF_DataBound").Change("GridValesTaxiCF_Change"))
+    )
+}
