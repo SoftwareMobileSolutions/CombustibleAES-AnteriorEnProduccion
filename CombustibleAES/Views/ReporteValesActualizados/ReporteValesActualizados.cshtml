@@ -182,18 +182,24 @@
         if (data.length > 0) {
             if (_fechaCF != null) {
                 if (_CF != "") {
-                    $.post(
-                        "../ReporteValesActualizados/ActualizarCreditoFiscal",
-                        { idVales: data, CF: $("#txtCreditoFiscal").val(), fechaCF: moment($("#fechasimple5").data("kendoDatePicker").value()).format("YYYYMMDD") }
-                        ,
-                        function (e) {
-                            if (e.codigo == 1) {
-                                GenerarMensaje("Aviso", e.mensaje, 2);
-                                $("#GridValesCF").data("kendoGrid").dataSource.read();
-                            }
-                            else GenerarMensaje("Aviso", "Error al actualizar la factura. " + e.mensaje, 4);
-                        }
-                    );
+                    if (txtCCF) {
+                        $.post("../ReporteValesActualizados/ActualizarCreditoFiscal",
+                             { idVales: data, CF: txtLastccf, fechaCF: moment($("#fechasimple5").data("kendoDatePicker").value()).format("YYYYMMDD") }
+                             ,
+                             function (e) {
+                                 if (e.codigo == 1) {
+                                     GenerarMensaje("Aviso", e.mensaje, 2);
+                                     $("#GridValesCF").data("kendoGrid").dataSource.read();
+                                 }
+                                 else GenerarMensaje("Aviso", "Error al actualizar la factura. " + e.mensaje, 4);
+                             }
+                            ).always(function () {
+                                $("#chk_dte").prop("checked", true).trigger("change");
+                                $("#txtCreditoFiscal").trigger("input");
+                        });
+                    } else {
+                        GenerarMensaje("Aviso", "El formato del Crédito Fiscal es incorrecto o está incompleto", 3);
+                    }
                 }
                 else GenerarMensaje("Aviso", "Por favor ingrese el número de crédito fiscal.", 3);
             }
@@ -303,6 +309,22 @@
         -moz-user-select: none; /* Firefox */
         -ms-user-select: none; /* Internet Explorer/Edge */
     }
+    .k-widget.k-maskedtextbox.k-textbox.marginFivePx {
+        border-color: black;
+        border: 1px solid #c5c5c5;
+        width: 310px;
+    }
+    ::placeholder {
+        color: #b3b3b3;
+        opacity: 1; /* Firefox */
+    }
+
+    ::-ms-input-placeholder { /* Edge 12 -18 */
+        color: #b3b3b3;
+    }
+    #controlesFecha .k-widget.k-datetimepicker.k-header {
+            width: 200px !important;
+    }
 </style>
 <div class="page-wrapper">
     <div class="panel panel-default" style="height:100%;">
@@ -351,9 +373,10 @@
                                             <label>Fecha Crédito Fiscal:</label>&nbsp;@RenderPage("~/Views/PartialViews/Template/fechasimple5.cshtml")
                                             &nbsp;&nbsp;&nbsp;
                                         </td>
-                                        <td>
+                                        <td style="width: 475px;">
                                             <label>Número Crédito Fiscal:</label>
-                                            <input type="text" id="txtCreditoFiscal" class="k-textbox marginFivePx" />
+                                            <label style="display: inline-block;position: absolute;top: -19px;">DTE<input id="chk_dte" onchange="fn_chk_changemask(this);" type="checkbox" checked style="position: absolute;left: 28px;"></label>
+                                            <input type="text" id="txtCreditoFiscal" class="k-textbox marginFivePx" placeholder="DTE-00-A000A000-000000000000000" style="text-transform: uppercase;" />
                                         </td>
                                         <td>
                                             <button type="button" class="btn btn-w-m btn-primary btn-sm" onclick="ActualizarCF()">Actualizar Número Factura</button>
@@ -369,6 +392,70 @@
         </div>
     </div>
 </div>
+
+<script type="text/javascript">
+    function fn_createMaskCCF() {
+        $("#txtCreditoFiscal").kendoMaskedTextBox({
+            mask: "DTE-AA-AAAAAAAA-AAAAAAAAAAAAAAA"
+        });
+    }
+    fn_createMaskCCF();
+
+    var txtCCF = false; //Permite saber si el CCF electrónico ingresado está correcto
+    var txtLastccf = "";
+    function fn_validacionCCF_electronico() {
+        setTimeout(function () {
+            $("#txtCreditoFiscal").on("input", function () {
+                var ccf = $("#txtCreditoFiscal").data("kendoMaskedTextBox").value().toUpperCase();
+                ccf = ccf.replaceAll("_", "");
+                txtLastccf = ccf;
+                if (dteMasked) {
+                    var regex = /^DTE-[A-Z0-9]{2}-[A-Z0-9]{8}-[A-Z0-9]{15}$/;
+                    if (regex.test(ccf)) { //Está correcto el CCF electrónico
+                        txtCCF = true;
+                    } else {
+                        txtCCF = false;
+                    }
+                } else {
+                    var regex = /^\d+$/;
+                    if (regex.test(ccf)) { //Está correcto el CCF electrónico
+                        txtCCF = true;
+                    } else {
+                        txtCCF = false;
+                    }
+                }
+            });
+        }, 500);
+
+    }
+    fn_validacionCCF_electronico();
+
+    var dteMasked = true;
+    function fn_chk_changemask(obj) {
+        var $txt = $("#txtCreditoFiscal");
+        var $txtkendo = $txt.data("kendoMaskedTextBox");
+        txtLastccf = "";
+        txtCCF = false;
+        $txt.val("");
+
+        if ($(obj).prop("checked")) {
+            dteMasked = true;
+            $txt./*attr("maxlength", 31).*/attr("placeholder", "DTE-00-A000A000-000000000000000");
+            $txtkendo.setOptions({ mask: "DTE-AA-AAAAAAAA-AAAAAAAAAAAAAAA" });
+            $txtkendo.trigger("change");
+
+        } else {
+            dteMasked = false;
+            $txt./*attr("maxlength", 10).*/attr("placeholder", "0000000000");
+            $txtkendo.setOptions({ mask: "0000000000" });
+            $txtkendo.trigger("change");
+            
+
+        }
+        //$("#txtCreditoFiscal").data("kendoMaskedTextBox").setOptions({ mask: "0000000000" });
+    }
+</script>
+
 
 @helper GridValesCF()
 {
